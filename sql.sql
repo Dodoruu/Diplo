@@ -29,6 +29,19 @@ CREATE TABLE IF NOT EXISTS JobDaten (
     FOREIGN KEY (AcceptedByUserID) REFERENCES UserDaten(UserID)
 );
 
+CREATE TABLE IF NOT EXISTS JobBewerbungen (
+    BewerbungID INT AUTO_INCREMENT PRIMARY KEY,
+    JobID INT UNSIGNED,
+    UserID INT,
+    Vorname VARCHAR(255),
+    Nachname VARCHAR(255),
+    Tel VARCHAR(20),
+    Email VARCHAR(255),
+    Akzeptiert BOOLEAN DEFAULT false,
+    FOREIGN KEY (JobID) REFERENCES JobDaten(JobID),
+    FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
+);
+
 CREATE TABLE IF NOT EXISTS EventDaten (
     EventID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT,

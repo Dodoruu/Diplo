@@ -33,16 +33,33 @@ function getAllJobs(req, res) {
       }
     });
   }
+
+  function applyForJob(req, res) {
+    const { jobID } = req.params; 
+    const { UserID, Vorname, Nachname, Tel, Email } = req.body;
   
-  function acceptJob(req, res) {
-    const { JobID, UserID } = req.body;
-  
-    const query = 'UPDATE JobDaten SET AcceptedByUserID = ? WHERE JobID = ?';
-  
-    db.query(query, [UserID, JobID], (err, result) => {
+    
+    const query = 'INSERT INTO JobBewerbungen (JobID, UserID, Vorname, Nachname, Tel, Email) VALUES (?, ?, ?, ?, ?, ?)';
+    db.query(query, [jobID, UserID, Vorname, Nachname, Tel, Email], (err, result) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
+        res.send({ success: true, applicationID: result.insertId });
+      }
+    });
+  }
+
+
+  function acceptJob(req, res) {
+    const { ApplicationID } = req.body;
+  
+    // Annahme: Füge Code hinzu, um die ausgewählte Bewerbung als akzeptiert zu markieren
+    const updateQuery = 'UPDATE JobBewerbungen SET Akzeptiert = true WHERE BewerbungID = ?';
+    db.query(updateQuery, [ApplicationID], (err, result) => {
+      if (err) {
+        res.status(500).send({ success: false, error: err.message });
+      } else {
+        // Hier könnte man eine nachricht an user schicken
         res.send({ success: true });
       }
     });
@@ -62,6 +79,7 @@ function getAllJobs(req, res) {
     getAllJobs,
     getJobsByPLZ,
     createJob,
+    applyForJob,
     acceptJob,
     getArchivedJobs
   };
