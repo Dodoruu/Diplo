@@ -9,11 +9,11 @@ function getAllJobs(req, res) {
   }
   
   function createJob(req, res) {
-    const { UserID, Textfeld, Wann, Nachname, Adresse, Tel } = req.body;
+    const { UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel } = req.body;
   
     const query = 'INSERT INTO JobDaten (UserID, Textfeld, Wann, Nachname, Adresse, Tel) VALUES (?, ?, ?, ?, ?, ?)';
   
-    db.query(query, [UserID, Textfeld, Wann, Nachname, Adresse, Tel], (err, result) => {
+    db.query(query, [UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel], (err, result) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {

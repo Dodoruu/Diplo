@@ -9,11 +9,11 @@ function getAllLoans(req, res) {
   }
   
   function createLoan(req, res) {
-    const { UserID, Textfeld, Wann, Nachname, Adresse, Tel } = req.body;
+    const { UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel } = req.body;
   
     const query = 'INSERT INTO LoanDaten (UserID, Textfeld, Wann, Nachname, Adresse, Tel) VALUES (?, ?, ?, ?, ?, ?)';
   
-    db.query(query, [UserID, Textfeld, Wann, Nachname, Adresse, Tel], (err, result) => {
+    db.query(query, [UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel], (err, result) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
@@ -23,7 +23,7 @@ function getAllLoans(req, res) {
   }
   
   function acceptLoan(req, res) {
-    const { LoanIDID, UserID } = req.body;
+    const { LoanID, UserID } = req.body;
   
     const query = 'UPDATE LoanDaten SET AcceptedByUserID = ? WHERE JobID = ?';
   

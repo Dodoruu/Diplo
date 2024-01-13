@@ -9,11 +9,11 @@ function getAllEvents(req, res) {
   }
   
   function createEvent(req, res) {
-    const { UserID, Textfeld, Wann, Adresse, Tel } = req.body;
+    const { UserID, Title, Textfeld,  Wann, Adresse, plz, Tel } = req.body;
   
     const query = 'INSERT INTO EventDaten (UserID, Textfeld, Wann,Adresse, Tel) VALUES (?, ?, ?, ?, ?, ?)';
   
-    db.query(query, [UserID, Textfeld, Wann, Adresse, Tel], (err, result) => {
+    db.query(query, [UserID, Title, Textfeld, Wann, Adresse, plz, Tel], (err, result) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
@@ -23,7 +23,7 @@ function getAllEvents(req, res) {
   }
   
   function joinEvent(req, res) {
-    const { JobID, UserID } = req.body;
+    const { EventID, UserID } = req.body;
   
     const query = 'UPDATE eventDaten SET JoinedByUserID = ? WHERE JobID = ?';
   

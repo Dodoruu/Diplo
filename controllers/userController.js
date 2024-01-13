@@ -31,7 +31,7 @@ function getAllUsers(req, res) {
 }
 
 function registerUser(req, res) {
-  const { Vorname, Nachname, adresse, Tel, email, password } = req.body;
+  const { Vorname, Nachname, adresse, plz, Tel, email, password } = req.body;
 
   console.log(password);
   bcrypt.hash(password, 10, (err, hash) => {
@@ -39,7 +39,7 @@ function registerUser(req, res) {
       res.status(500).send({ success: false, error: err.message });
     } else {
       const query = 'INSERT INTO UserDaten (Vorname, Nachname, adresse, Tel, email, password) VALUES (?, ?, ?, ?, ?, ?)';
-      db.query(query, [Vorname, Nachname, adresse, Tel, email, hash], (err, result) => {
+      db.query(query, [Vorname, Nachname, adresse, plz, Tel, email, hash], (err, result) => {
         if (err) {
           res.status(500).send({ success: false, error: err.message });
         } else {
@@ -78,11 +78,11 @@ function loginUser(req, res) {
 
 function updateUser(req, res) {
   const userID = req.params.userID;
-  const { Vorname, Nachname, adresse, Tel, email } = req.body;
+  const { Vorname, Nachname, adresse, plz, Tel, email } = req.body;
 
   const query = 'UPDATE UserDaten SET Vorname = ?, Nachname = ?, adresse = ?, Tel = ?, email = ? WHERE UserID = ?';
 
-  db.query(query, [Vorname, Nachname, adresse, Tel, email, userID], (err, result) => {
+  db.query(query, [Vorname, Nachname, adresse, plz, Tel, email, userID], (err, result) => {
     if (err) {
       res.status(500).send({ success: false, error: err.message });
     } else {

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS UserDaten (
     Vorname VARCHAR(255) NOT NULL,
     Nachname VARCHAR(255) NOT NULL,
     adresse VARCHAR(255),
+    plz INT,
     Tel VARCHAR(20),
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) -- Hier wird das gehashte Passwort gespeichert
@@ -16,10 +17,12 @@ CREATE TABLE IF NOT EXISTS UserDaten (
 CREATE TABLE IF NOT EXISTS JobDaten (
     JobID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT,
+    Title TEXT,
     Textfeld TEXT,
-    Wann DATETIME,
+    Wann TEXT,
     Nachname VARCHAR(255),
     Adresse VARCHAR(255),
+    plz INT,
     Tel VARCHAR(20),
     AcceptedByUserID INT, -- Hier wird die ID des annehmenden Benutzers gespeichert
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
@@ -29,9 +32,11 @@ CREATE TABLE IF NOT EXISTS JobDaten (
 CREATE TABLE IF NOT EXISTS EventDaten (
     EventID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT,
+    Title,
     Textfeld TEXT,
-    Wann DATETIME,
+    Wann TEXT,
     Adresse VARCHAR(255),
+    plz INT,
     Tel VARCHAR(20),
     JoinedByUserID INT, -- Hier wird die ID des annehmenden Benutzers gespeichert
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
@@ -42,9 +47,10 @@ CREATE TABLE IF NOT EXISTS LoanDaten (
     LoanID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT,
     Textfeld TEXT,
-    Wann DATETIME,
+    Wann TEXT,
     Nachname VARCHAR(255),
     Adresse VARCHAR(255),
+    plz INT,
     Tel VARCHAR(20),
     AcceptedByUserID INT, -- Hier wird die ID des annehmenden Benutzers gespeichert
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
@@ -62,6 +68,7 @@ CREATE TABLE IF NOT EXISTS Archive (
     Wann DATETIME,
     Nachname VARCHAR(255),
     Adresse VARCHAR(255),
+    plz INT,
     Tel VARCHAR(20),
     FOREIGN KEY (JobID) REFERENCES JobDaten(JobID),
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
