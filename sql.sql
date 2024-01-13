@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS EventDaten (
     Textfeld TEXT,
     Wann TEXT,
     Adresse VARCHAR(255),
-    plz INT,
+    PLZ INT,
     Tel VARCHAR(20),
     JoinedByUserID INT, -- Hier wird die ID des annehmenden Benutzers gespeichert
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
