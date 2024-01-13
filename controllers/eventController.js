@@ -8,6 +8,19 @@ function getAllEvents(req, res) {
     });
   }
   
+  function getEventsByPLZ(req, res) {
+    const { PLZ1, PLZ2 } = req.body;
+    const query = 'SELECT * FROM EventDaten WHERE PLZ IN (?, ?)';
+    db.query(query, [PLZ1, PLZ2], (err, results) => {
+      if (err) {
+        res.status(500).send({ success: false, error: err.message });
+      } else {
+        res.send({ success: true, data: results });
+      }
+    });
+  }
+
+
   function createEvent(req, res) {
     const { UserID, Title, Textfeld,  Wann, Adresse, plz, Tel } = req.body;
   
@@ -48,6 +61,7 @@ function getAllEvents(req, res) {
   
   module.exports = {
     getAllEvents,
+    getEventsByPLZ,
     createEvent,
     joinEvent,
     getArchivedEvent

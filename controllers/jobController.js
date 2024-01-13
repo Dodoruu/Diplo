@@ -7,6 +7,18 @@ function getAllJobs(req, res) {
       }
     });
   }
+
+  function getJobsByPLZ(req, res) {
+    const { PLZ1, PLZ2 } = req.body;
+    const query = 'SELECT * FROM JobDaten WHERE PLZ IN (?, ?)';
+    db.query(query, [PLZ1, PLZ2], (err, results) => {
+      if (err) {
+        res.status(500).send({ success: false, error: err.message });
+      } else {
+        res.send({ success: true, data: results });
+      }
+    });
+  }
   
   function createJob(req, res) {
     const { UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel } = req.body;
@@ -48,6 +60,7 @@ function getAllJobs(req, res) {
   
   module.exports = {
     getAllJobs,
+    getJobsByPLZ,
     createJob,
     acceptJob,
     getArchivedJobs
