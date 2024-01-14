@@ -33,22 +33,20 @@ function getAllUsers(req, res) {
 function registerUser(req, res) {
   const { Vorname, Nachname, adresse, plz, Tel, email, password } = req.body;
 
-  console.log(password);
-  bcrypt.hash(password, 10, (err, hash) => {
+  let hash =  bcrypt.hashSync(password, 10);
+  
+  const query = 'INSERT INTO UserDaten (Vorname, Nachname, adresse, plz, Tel, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [Vorname, Nachname, adresse, plz, Tel, email, hash], (err, result) => {
     if (err) {
-      res.status(500).send({ success: false, error: err.message });
+      console.log(err);
+      res.status(500).send({ success: false, error: 'Internal Server Error' });
     } else {
-      const query = 'INSERT INTO UserDaten (Vorname, Nachname, adresse, Tel, email, password) VALUES (?, ?, ?, ?, ?, ?)';
-      db.query(query, [Vorname, Nachname, adresse, plz, Tel, email, hash], (err, result) => {
-        if (err) {
-          res.status(500).send({ success: false, error: err.message });
-        } else {
-          res.send({ success: true, userID: result.insertId });
-        }
-      });
+      res.send({ success: true, userID: result.insertId });
     }
   });
-} 
+}
+
+
 
 function loginUser(req, res) {
   const { email, password } = req.body;

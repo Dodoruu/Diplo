@@ -24,28 +24,29 @@ CREATE TABLE IF NOT EXISTS JobDaten (
     Adresse VARCHAR(255),
     plz INT,
     Tel VARCHAR(20),
-    AcceptedByUserID INT, -- Hier wird die ID des annehmenden Benutzers gespeichert
+    AcceptedByUserID INT, 
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
     FOREIGN KEY (AcceptedByUserID) REFERENCES UserDaten(UserID)
 );
 
+
 CREATE TABLE IF NOT EXISTS JobBewerbungen (
     BewerbungID INT AUTO_INCREMENT PRIMARY KEY,
-    JobID INT UNSIGNED,
+    JobID INT,
     UserID INT,
+	AcceptedByUserID INT,
     Vorname VARCHAR(255),
     Nachname VARCHAR(255),
     Tel VARCHAR(20),
     Email VARCHAR(255),
     Akzeptiert BOOLEAN DEFAULT false,
-    FOREIGN KEY (JobID) REFERENCES JobDaten(JobID),
-    FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
+    FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
+    FOREIGN KEY (AcceptedByUserID) REFERENCES UserDaten(UserID)
 );
-
 CREATE TABLE IF NOT EXISTS EventDaten (
     EventID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT,
-    Title,
+    Title TEXT,
     Textfeld TEXT,
     Wann TEXT,
     Adresse VARCHAR(255),

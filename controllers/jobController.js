@@ -9,9 +9,14 @@ function getAllJobs(req, res) {
   }
 
   function getJobsByPLZ(req, res) {
-    const { PLZ1, PLZ2 } = req.body;
-    const query = 'SELECT * FROM JobDaten WHERE PLZ IN (?, ?)';
-    db.query(query, [PLZ1, PLZ2], (err, results) => {
+   if( req.query.plz == null){
+    res.status(400).send({ success: false, error: "plz was not provided"});
+    return;
+   }
+    const query = 'SELECT * FROM JobDaten WHERE plz IN (?)';
+    
+
+    db.query(query, req.query.plz, (err, results) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
@@ -23,7 +28,7 @@ function getAllJobs(req, res) {
   function createJob(req, res) {
     const { UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel } = req.body;
   
-    const query = 'INSERT INTO JobDaten (UserID, Textfeld, Wann, Nachname, Adresse, Tel) VALUES (?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO JobDaten (UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
   
     db.query(query, [UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel], (err, result) => {
       if (err) {
@@ -49,18 +54,23 @@ function getAllJobs(req, res) {
     });
   }
 
-
   function acceptJob(req, res) {
-    const { ApplicationID } = req.body;
+    const { ApplicationID, AcceptedByUserID } = req.body;
   
-    // Annahme: Füge Code hinzu, um die ausgewählte Bewerbung als akzeptiert zu markieren
     const updateQuery = 'UPDATE JobBewerbungen SET Akzeptiert = true WHERE BewerbungID = ?';
     db.query(updateQuery, [ApplicationID], (err, result) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
-        // Hier könnte man eine nachricht an user schicken
-        res.send({ success: true });
+        const updateJobQuery = 'UPDATE JobDaten SET AcceptedByUserID = ? WHERE JobID = ?';
+        db.query(updateJobQuery, [AcceptedByUserID, jobID], (err, result) => {
+          if (err) {
+            res.status(500).send({ success: false, error: err.message });
+          } else {
+            // Hier könnte man eine Nachricht an den akzeptierten Benutzer schicken
+            res.send({ success: true });
+          }
+        });
       }
     });
   }
