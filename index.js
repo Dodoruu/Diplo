@@ -6,6 +6,8 @@ const userRoutes = require('./Routes/userRoutes'); // Anpassung hier
 const jobRoutes = require('./Routes/jobRoutes');
 const eventRoutes = require('./Routes/eventRoutes'); // Anpassung hier
 const loanRoutes = require('./Routes/loanRoutes');
+const cors=require('cors');
+app.use(cors());
 
 app.use(express.json());
 
