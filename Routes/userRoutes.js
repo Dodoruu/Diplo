@@ -6,5 +6,6 @@ router.get('/', userController.getAllUsers);
 router.post('/register', userController.registerUser);
 router.post('/login', userController.loginUser);
 router.put('/:userID', userController.updateUser);
+router.post('/getUserFromToken', userController.getUserFromToken);
 
 module.exports = router;

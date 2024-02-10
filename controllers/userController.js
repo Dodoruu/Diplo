@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const secretKey = 'dein_geheimer_schluessel';
 
 function generateToken(userID) {
-  return jwt.sign({ userID }, secretKey, { expiresIn: '1h' }); // Das Token ist 1 Stunde gültig
+  return jwt.sign({ userID }, secretKey, { expiresIn: '1h' }); 
 }
 
 module.exports = {
@@ -14,7 +14,7 @@ module.exports = {
   registerUser,
   loginUser,
   updateUser,
-  generateToken // Füge diese Zeile hinzu, um die Funktion zu exportieren
+  generateToken
 };
 
 
@@ -62,7 +62,16 @@ function loginUser(req, res) {
         bcrypt.compare(password, user.password, (err, result) => {
           if (result) {
             const token = generateToken(user.UserID);
-            res.send({ success: true, token });
+            
+            //store the token into the database
+            const storeTokenQuery = 'UPDATE UserDaten SET cookie = ? WHERE UserID = ?';
+            db.query(storeTokenQuery, [token, user.UserID], (err, updateResults) => {
+              if (err) {
+                res.status(500).send({ success: false, error: err.message });
+              } else {
+                res.send({ success: true, token });
+              }
+            });
           } else {
             res.status(401).send({ success: false, error: 'Falsches Passwort' });
           }
@@ -72,6 +81,20 @@ function loginUser(req, res) {
       }
     }
   });
+}
+
+function getUserFromToken(req, res) {
+  const {token} = req.body;
+
+  const query = 'SELECT * FROM UserDaten WHERE cookie = ?'
+  db.query(query, [token], (err, result) => {
+    if (err) {
+      res.status(500).send({ success: false, error: err.message });
+    } else {
+      res.send({ success: true, user: result });
+    }
+  });
+
 }
 
 function updateUser(req, res) {
@@ -93,5 +116,6 @@ module.exports = {
   getAllUsers,
   registerUser,
   loginUser,
-  updateUser
+  updateUser,
+  getUserFromToken
 };
