@@ -21,6 +21,7 @@ function getAllEvents(req, res) {
   }
 
 
+  
   function createEvent(req, res) {
     const { UserID, Title, Textfeld,  Startzeitpunkt, Endzeitpunkt, Adresse, plz, Tel } = req.body;
   
