@@ -26,11 +26,11 @@ function getAllJobs(req, res) {
   }
   
   function createJob(req, res) {
-    const { UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel } = req.body;
-  
-    const query = 'INSERT INTO JobDaten (UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-  
-    db.query(query, [UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel], (err, result) => {
+    const { UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel, } = req.body;
+
+    const query = 'INSERT INTO JobDaten (UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+
+    db.query(query, [UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel], (err, result) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
@@ -67,7 +67,7 @@ function getAllJobs(req, res) {
           if (err) {
             res.status(500).send({ success: false, error: err.message });
           } else {
-            // Hier könnte man eine Nachricht an den akzeptierten Benutzer schicken
+            // Hier könnte ich eine message an User schicken
             res.send({ success: true });
           }
         });
@@ -75,15 +75,45 @@ function getAllJobs(req, res) {
     });
   }
   
-  function getArchivedJobs(req, res) {
-    db.query('SELECT * FROM Archive', (err, results) => {
-      if (err) {
-        res.status(500).send({ success: false, error: err.message });
-      } else {
-        res.send({ success: true, data: results });
-      }
+  function closeAndArchiveJob(req, res) {
+    const { jobID } = req.params; // Annahme, dass die JobID über die URL als Parameter übergeben wird
+    // Zuerst die Daten des Jobs abrufen, die archiviert werden sollen
+    db.query('SELECT * FROM JobDaten WHERE JobID = ?', [jobID], (err, result) => {
+        if (err) {
+            res.status(500).send({ success: false, error: err.message });
+        } else if (result.length > 0) {
+            const job = result[0];
+            // Job-Daten in die Archiv-Tabelle einfügen
+            const archiveQuery = 'INSERT INTO Archive (JobID, UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)';
+            db.query(archiveQuery, [job.JobID, job.UserID, job.Textfeld, job.Startzeitpunkt, job.Endzeitpunkt, job.Nachname, job.Adresse, job.plz, job.Tel], (err, archiveResult) => {
+                if (err) {
+                    res.status(500).send({ success: false, error: "Error archiving the job: " + err.message });
+                } else {
+
+                    db.query('DELETE FROM JobDaten WHERE JobID = ?', [jobID], (err, deleteResult) => {
+                        if (err) {
+                            res.status(500).send({ success: false, error: "Error deleting the job: " + err.message });
+                        } else {
+                            res.send({ success: true, message: "Job successfully archived and deleted" });
+                        }
+                    });
+                }
+            });
+        } else {
+            res.status(404).send({ success: false, error: "Job not found" });
+        }
     });
-  }
+}
+
+function getArchivedJobs(req, res) {
+  db.query('SELECT * FROM Archive WHERE JobID IS NOT NULL', (err, results) => {
+      if (err) {
+          res.status(500).send({ success: false, error: err.message });
+      } else {
+          res.send({ success: true, data: results });
+      }
+  });
+}
   
   module.exports = {
     getAllJobs,
@@ -91,6 +121,7 @@ function getAllJobs(req, res) {
     createJob,
     applyForJob,
     acceptJob,
-    getArchivedJobs
+    getArchivedJobs,
+    closeAndArchiveJob 
   };
   

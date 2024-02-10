@@ -21,11 +21,11 @@ function getAllLoans(req, res) {
   }
   
   function createLoan(req, res) {
-    const { UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel } = req.body;
+    const { UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel } = req.body;
   
-    const query = 'INSERT INTO LoanDaten (UserID, Textfeld, Wann, Nachname, Adresse, Tel) VALUES (?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO LoanDaten (UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, Tel) VALUES (?, ?, ?, ?, ?, ?)';
   
-    db.query(query, [UserID, Title, Textfeld, Wann, Nachname, Adresse, plz, Tel], (err, result) => {
+    db.query(query, [UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel], (err, result) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
