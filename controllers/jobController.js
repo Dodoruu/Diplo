@@ -67,7 +67,7 @@ function getAllJobs(req, res) {
           if (err) {
             res.status(500).send({ success: false, error: err.message });
           } else {
-            // Hier könnte man eine Nachricht an den akzeptierten Benutzer schicken
+            // Hier könnte ich eine message an User schicken
             res.send({ success: true });
           }
         });
