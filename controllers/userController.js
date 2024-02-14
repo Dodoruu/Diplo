@@ -50,6 +50,8 @@ function registerUser(req, res) {
 
 function loginUser(req, res) {
   const { email, password } = req.body;
+  if(email == '' || email == null || password == '' || password == null)
+    res.status(401).send({ success: false, error: 'Mail oder Passwort ist leer.' });
 
   const query = 'SELECT * FROM UserDaten WHERE email = ?';
 
@@ -101,15 +103,45 @@ function updateUser(req, res) {
   const userID = req.params.userID;
   const { Vorname, Nachname, adresse, plz, Tel, email } = req.body;
 
-  const query = 'UPDATE UserDaten SET Vorname = ?, Nachname = ?, adresse = ?, Tel = ?, email = ? WHERE UserID = ?';
-
+  const query = 'UPDATE UserDaten SET Vorname = ?, Nachname = ?, adresse = ?, plz = ?, Tel = ?, email = ? WHERE UserID = ?';
+  
   db.query(query, [Vorname, Nachname, adresse, plz, Tel, email, userID], (err, result) => {
     if (err) {
       res.status(500).send({ success: false, error: err.message });
     } else {
-      res.send({ success: true });
+      res.send({ success: true, result: result });
     }
   });
+}
+
+
+function getUserHasTutorialCompleted(req, res) {
+  const userID = req.query.userID;
+
+  const query = 'SELECT hasCompletedTutorial FROM UserDaten WHERE UserID = ?'
+  db.query(query, [userID], (err, result) => {
+    if (err) {
+      res.status(500).send({ success: false, error: err.message });
+    } else {
+      res.send({ success: true, result: result });
+    }
+  });
+
+}
+
+function setUserHasTutorialCompleted(req, res) {
+  const userID = req.query.userID;
+
+
+  const query = 'UPDATE UserDaten SET hasCompletedTutorial = 1 WHERE UserID = ?'
+  db.query(query, [userID], (err, result) => {
+    if (err) {
+      res.status(500).send({ success: false, error: err.message });
+    } else {
+      res.send({ success: true, result: result });
+    }
+  });
+
 }
 
 module.exports = {
@@ -117,5 +149,7 @@ module.exports = {
   registerUser,
   loginUser,
   updateUser,
-  getUserFromToken
+  getUserFromToken,
+  getUserHasTutorialCompleted,
+  setUserHasTutorialCompleted
 };
