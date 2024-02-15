@@ -26,9 +26,9 @@ function getAllJobs(req, res) {
   }
   
   function createJob(req, res) {
-    const { UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel, } = req.body;
+    const { UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel } = req.body;
 
-    const query = 'INSERT INTO JobDaten (UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO JobDaten (UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
     db.query(query, [UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel], (err, result) => {
       if (err) {
