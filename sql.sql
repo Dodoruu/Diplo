@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS UserDaten (
     plz INT,
     Tel VARCHAR(20),
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) -- Hier wird das gehashte Passwort gespeichert
+    password VARCHAR(255), -- Hier wird das gehashte Passwort gespeichert
+    cookie VARCHAR(255),
+    hasCompletedTutorial BOOLEAN DEFAULT false
 );
 
 -- Tabelle JobDaten erstellen
