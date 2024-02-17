@@ -6,7 +6,7 @@ router.get('/all', eventController.getAllEvents);
 router.post('/', eventController.getEventsByPLZ);
 router.post('/create', eventController.createEvent);
 router.post('/join', eventController.joinEvent);
-router.post('/:eventID/close', closeAndArchiveEvent);
+router.post('/:eventID/close',eventController.closeAndArchiveEvent);
 router.get('/archive', eventController.getArchivedEvent);
 
 module.exports = router;

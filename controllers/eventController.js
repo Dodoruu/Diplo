@@ -9,9 +9,17 @@ function getAllEvents(req, res) {
   }
   
   function getEventsByPLZ(req, res) {
-    const { PLZ1, PLZ2 } = req.body;
-    const query = 'SELECT * FROM EventDaten WHERE PLZ IN (?, ?)';
-    db.query(query, [PLZ1, PLZ2], (err, results) => {
+    if (!req.query.plz) { // Note: Express handles empty query params
+      res.status(400).send({ success: false, error: "plz was not provided" });
+      return;
+    }
+  
+    const plzs = Array.isArray(req.query.plz) ? req.query.plz : [req.query.plz];
+  
+    const placeholders = plzs.map(() => '?').join(','); 
+    const query = `SELECT * FROM EventDaten WHERE plz IN (${placeholders})`;
+  
+    db.query(query, plzs, (err, results) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
@@ -23,11 +31,11 @@ function getAllEvents(req, res) {
 
   
   function createEvent(req, res) {
-    const { UserID, Title, Textfeld,  Startzeitpunkt, Endzeitpunkt, Adresse, plz, Tel } = req.body;
+    const { UserID, Title, Textfeld,  Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel } = req.body;
   
-    const query = 'INSERT INTO EventDaten (UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Adresse, Tel) VALUES (?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO EventDaten (UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
   
-    db.query(query, [UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Adresse, plz, Tel], (err, result) => {
+    db.query(query, [UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel], (err, result) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
@@ -52,21 +60,17 @@ function getAllEvents(req, res) {
   
 
   function closeAndArchiveEvent(req, res) {
-    const { eventID } = req.params; // Annahme, dass die EventID über die URL als Parameter übergeben wird
-    // Zuerst die Daten des Events abrufen, die archiviert werden sollen
+    const { eventID } = req.params;
     db.query('SELECT * FROM EventDaten WHERE EventID = ?', [eventID], (err, result) => {
         if (err) {
             res.status(500).send({ success: false, error: err.message });
         } else if (result.length > 0) {
             const event = result[0];
-            // Event-Daten in die Archiv-Tabelle einfügen
-            const archiveQuery = 'INSERT INTO Archive (EventID, UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)';
-            db.query(archiveQuery, [event.EventID, event.UserID, event.Textfeld, event.Startzeitpunkt, event.Endzeitpunkt, event.Nachname, event.Adresse, event.PLZ, event.Tel], (err, archiveResult) => {
+            const archiveQuery = 'INSERT INTO Archive (EventID, UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?)';
+            db.query(archiveQuery, [event.EventID, event.UserID, event.Textfeld, event.Startzeitpunkt, event.Endzeitpunkt, event.Vorname, event.Nachname, event.Adresse, event.PLZ, event.Tel], (err, archiveResult) => {
                 if (err) {
                     res.status(500).send({ success: false, error: "Error archiving the event: " + err.message });
                 } else {
-                    // Optional: Das Event aus der EventDaten Tabelle entfernen oder als abgeschlossen markieren
-                    // Für dieses Beispiel entfernen wir das Event
                     db.query('DELETE FROM EventDaten WHERE EventID = ?', [eventID], (err, deleteResult) => {
                         if (err) {
                             res.status(500).send({ success: false, error: "Error deleting the event: " + err.message });
@@ -98,7 +102,7 @@ function getArchivedEvent(req, res) {
     getEventsByPLZ,
     createEvent,
     joinEvent,
-    getArchivedEvent,
-    closeAndArchiveEvent
+    closeAndArchiveEvent,
+    getArchivedEvent
   };
   

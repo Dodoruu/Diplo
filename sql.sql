@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS EventDaten (
 CREATE TABLE IF NOT EXISTS LoanDaten (
     LoanID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT,
+    Title Text,
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
