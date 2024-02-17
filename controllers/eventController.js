@@ -47,7 +47,7 @@ function getAllEvents(req, res) {
   function joinEvent(req, res) {
     const { EventID, UserID } = req.body;
   
-    const query = 'UPDATE eventDaten SET JoinedByUserID = ? WHERE JobID = ?';
+    const query = 'UPDATE eventDaten SET JoinedByUserID = ? WHERE EventID = ?';
   
     db.query(query, [UserID, EventID], (err, result) => {
       if (err) {
