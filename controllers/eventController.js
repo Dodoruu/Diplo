@@ -33,7 +33,7 @@ function getAllEvents(req, res) {
   function createEvent(req, res) {
     const { UserID, Title, Textfeld,  Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel } = req.body;
   
-    const query = 'INSERT INTO EventDaten (UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO EventDaten (UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
   
     db.query(query, [UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel], (err, result) => {
       if (err) {

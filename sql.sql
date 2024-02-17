@@ -10,9 +10,7 @@ CREATE TABLE IF NOT EXISTS UserDaten (
     plz INT,
     Tel VARCHAR(20),
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255), -- Hier wird das gehashte Passwort gespeichert
-    cookie VARCHAR(255),
-    hasCompletedTutorial BOOLEAN DEFAULT false
+    password VARCHAR(255) -- Hier wird das gehashte Passwort gespeichert
 );
 
 -- Tabelle JobDaten erstellen
@@ -23,6 +21,7 @@ CREATE TABLE IF NOT EXISTS JobDaten (
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
+    Vorname VARCHAR(255),
     Nachname VARCHAR(255),
     Adresse VARCHAR(255),
     plz INT,
@@ -53,6 +52,8 @@ CREATE TABLE IF NOT EXISTS EventDaten (
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
+    Vorname VARCHAR(255),
+    Nachname VARCHAR(255),
     Adresse VARCHAR(255),
     PLZ INT,
     Tel VARCHAR(20),
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS LoanDaten (
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
+    Vorname VARCHAR(255),
     Nachname VARCHAR(255),
     Adresse VARCHAR(255),
     plz INT,
@@ -87,6 +89,7 @@ CREATE TABLE IF NOT EXISTS Archive (
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
+    Vorname VARCHAR(255),
     Nachname VARCHAR(255),
     Adresse VARCHAR(255),
     plz INT,
