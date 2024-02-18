@@ -44,17 +44,35 @@ function getAllJobs(req, res) {
   }
 
   function applyForJob(req, res) {
-    const { jobID } = req.params; 
+    const { jobID } = req.params;
     const { UserID, Vorname, Nachname, Tel, Email } = req.body;
   
-    
-    const query = 'INSERT INTO JobBewerbungen (JobID, UserID, Vorname, Nachname, Tel, Email) VALUES (?, ?, ?, ?, ?, ?)';
-    db.query(query, [jobID, UserID, Vorname, Nachname, Tel, Email], (err, result) => {
+    // Prüfen, ob der User der Ersteller des Jobs ist
+    const isJobCreatorQuery = 'SELECT UserID FROM JobDaten WHERE JobID = ?';
+    db.query(isJobCreatorQuery, [jobID], (err, creatorResult) => {
       if (err) {
-        res.status(500).send({ success: false, error: err.message });
-      } else {
-        res.send({ success: true, applicationID: result.insertId });
+        return res.status(500).send({ success: false, error: err.message });
       }
+  
+      if (creatorResult.length === 0) {
+        return res.status(404).send({ success: false, error: "Job not found" });
+      }
+  
+      const jobCreatorID = creatorResult[0].UserID;
+  
+      if (jobCreatorID === UserID) {
+        return res.status(400).send({ success: false, error: "User cannot apply for their own job" });
+      }
+  
+      // Wenn der User nicht der Ersteller ist, fortfahren mit der Bewerbung
+      const query = 'INSERT INTO JobBewerbungen (JobID, UserID, Vorname, Nachname, Tel, Email) VALUES (?, ?, ?, ?, ?, ?)';
+      db.query(query, [jobID, UserID, Vorname, Nachname, Tel, Email], (err, result) => {
+        if (err) {
+          res.status(500).send({ success: false, error: err.message });
+        } else {
+          res.send({ success: true, applicationID: result.insertId });
+        }
+      });
     });
   }
 
@@ -80,41 +98,43 @@ function getAllJobs(req, res) {
   }
   
   function closeAndArchiveJob(req, res) {
-    const { jobID } = req.params; // JobID aus der URL extrahieren
+    const { jobID } = req.params;
+    const currentUserId = req.user.id; // Aus Authentifizierung abrufen
   
-    // Zuerst die Daten des Jobs abrufen, die archiviert werden sollen
-    db.query('SELECT * FROM JobDaten WHERE JobID = ?', [jobID], (err, result) => {
+    // Jobdetails für Archiv abrufen, Berechtigungen prüfen
+    db.query('SELECT * FROM JobDaten WHERE JobID = ? AND UserID = ?', [jobID, currentUserId], (err, result) => {
       if (err) {
         return res.status(500).send({ success: false, error: "Error fetching job details: " + err.message });
       }
   
       if (result.length === 0) {
-        return res.status(404).send({ success: false, error: "Job not found" });
-      } 
+        return res.status(404).send({ success: false, error: "Job not found or access denied" });
+      }
   
       const job = result[0];
   
-      // Job-Daten in die Archiv-Tabelle einfügen
-      const archiveQuery = 'INSERT INTO Archive (JobID, UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?)';
-      db.query(archiveQuery, [job.JobID, job.UserID, job.Textfeld, job.Startzeitpunkt, job.Endzeitpunkt, job.Nachname, job.Adresse, job.plz, job.Tel], (err, archiveResult) => {
+      // Archivieren (inkl. JobID)
+      const archiveQuery = 'INSERT INTO Archive (JobID, UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?)';
+      db.query(archiveQuery, [job.JobID, job.UserID, job.Textfeld, job.Startzeitpunkt, job.Endzeitpunkt, job.Vorname, job.Nachname, job.Adresse, job.plz, job.Tel], (err, archiveResult) => {
         if (err) {
           return res.status(500).send({ success: false, error: "Error archiving the job: " + err.message });
-        } 
+        }
   
-        // Job aus der JobDaten-Tabelle löschen
+        // Löschen des Jobs
         db.query('DELETE FROM JobDaten WHERE JobID = ?', [jobID], (err, deleteResult) => {
           if (err) {
             return res.status(500).send({ success: false, error: "Error deleting the job: " + err.message });
-          } 
-  
+          }
           res.send({ success: true, message: "Job successfully archived and deleted" });
         });
       });
     });
   }
-
+  
   function getArchivedJobs(req, res) {
-    db.query('SELECT * FROM Archive WHERE JobID IS NOT NULL', (err, results) => {
+    const currentUserId = req.user.id; 
+  
+    db.query('SELECT * FROM Archive WHERE UserID = ?', [currentUserId], (err, results) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
@@ -122,7 +142,24 @@ function getAllJobs(req, res) {
       }
     });
   }
-
+ 
+  // Middleware zur Authentifizierung
+  const requireAuth = function (req, res, next) {
+    const token = req.headers.authorization?.split(' ')[1];
+  
+    if (!token) {
+      return res.status(401).send({ success: false, error: 'Access denied -  Authentication Token not provided' });
+    }
+  
+    try {
+      const decoded = jwt.verify(token, secretKey);
+      req.user = decoded; // Dekodiertes User-Objekt anhängen
+      next();
+    } catch (err) {
+      res.status(400).send({ success: false, error: 'Invalid token' });
+    }
+  };
+  
   module.exports = {
     getAllJobs,
     getJobsByPLZ,
@@ -130,6 +167,7 @@ function getAllJobs(req, res) {
     applyForJob,
     acceptJob,
     getArchivedJobs,
-    closeAndArchiveJob 
+    closeAndArchiveJob, 
+    requireAuth
   };
   

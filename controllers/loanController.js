@@ -42,67 +42,131 @@ function getAllLoans(req, res) {
     });
   }
   
+  function applyForLoan(req, res) {
+    const { LoanID } = req.params;
+    const { UserID, Vorname, Nachname, Tel, Email } = req.body;
+  
+    // Prüfen, ob der User der Ersteller des Loan ist
+    const isLoanCreatorQuery = 'SELECT UserID FROM LoanDaten WHERE LoanID = ?';
+    db.query(isLoanCreatorQuery, [LoanID], (err, creatorResult) => {
+      if (err) {
+        return res.status(500).send({ success: false, error: err.message });
+      }
+  
+      if (creatorResult.length === 0) {
+        return res.status(404).send({ success: false, error: "Loan not found" });
+      }
+  
+      const LoanCreatorID = creatorResult[0].UserID;
+  
+      if (LoanCreatorID === UserID) {
+        return res.status(400).send({ success: false, error: "User cannot apply for their own loan" });
+      }
+  
+      // Wenn der User nicht der Ersteller ist, fortfahren mit der Bewerbung
+      const query = 'INSERT INTO LoanBewerbungen (LoanID, UserID, Vorname, Nachname, Tel, Email) VALUES (?, ?, ?, ?, ?, ?)';
+      db.query(query, [LoanID, UserID, Vorname, Nachname, Tel, Email], (err, result) => {
+        if (err) {
+          res.status(500).send({ success: false, error: err.message });
+        } else {
+          res.send({ success: true, applicationID: result.insertId });
+        }
+      });
+    });
+  }
+
   function acceptLoan(req, res) {
-    const { LoanID, UserID } = req.body;
+    const { ApplicationID, AcceptedByUserID } = req.body;
   
-    const query = 'UPDATE LoanDaten SET AcceptedByUserID = ? WHERE LoanID = ?';
-  
-    db.query(query, [UserID, LoanID], (err, result) => {
+    const updateQuery = 'UPDATE LoanBewerbungen SET Akzeptiert = true WHERE BewerbungID = ?';
+    db.query(updateQuery, [ApplicationID], (err, result) => {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
-        res.send({ success: true });
+        const updateLoanQuery = 'UPDATE LoanDaten SET AcceptedByUserID = ? WHERE LoanID = ?';
+        db.query(updateLoanQuery, [AcceptedByUserID, LoanID], (err, result) => {
+          if (err) {
+            res.status(500).send({ success: false, error: err.message });
+          } else {
+            // Hier könnte ich eine message an User schicken
+            res.send({ success: true });
+          }
+        });
       }
     });
   }
   
   function closeAndArchiveLoan(req, res) {
-    const { LoanID } = req.params; // Annahme, dass LoanID über URL-Parameter übergeben wird
+    const { LoanID } = req.params;
+    const currentUserId = req.user.id; // Aus Authentifizierung abrufen
   
-    // Schritt 1: Details des Loans abrufen
-    db.query('SELECT * FROM LoanDaten WHERE LoanID = ?', [LoanID], (err, result) => {
+    // Loandetails für Archiv abrufen, Berechtigungen prüfen
+    db.query('SELECT * FROM LoanDaten WHERE LoanID = ? AND UserID = ?', [LoanID, currentUserId], (err, result) => {
       if (err) {
-        res.status(500).send({ success: false, error: err.message });
-      } else if (result.length > 0) {
-        const loan = result[0];
-        // Schritt 2: Loan in das Archiv verschieben
-        const archiveQuery = 'INSERT INTO Archive (UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname,  Nachname, Adresse, PLZ, Tel) VALUES (?, ?, NOW(), ?, ?, ?, ?, ?)';
-        db.query(archiveQuery, [loan.UserID, loan.Textfeld, loan.Startzeitpunkt, loan.Endzeitpunkt, loan.Vorname, loan.Nachname, loan.Adresse, loan.PLZ, loan.Tel], (archiveErr, archiveResult) => {
-          if (archiveErr) {
-            res.status(500).send({ success: false, error: archiveErr.message });
-          } else {
-            // Schritt 3: Originalen Loan löschen (optional, je nach Anforderung)
-            db.query('DELETE FROM LoanDaten WHERE LoanID = ?', [LoanID], (deleteErr, deleteResult) => {
-              if (deleteErr) {
-                res.status(500).send({ success: false, error: deleteErr.message });
-              } else {
-                res.send({ success: true, message: 'Loan erfolgreich archiviert und aus den aktiven Daten entfernt.' });
-              }
-            });
-          }
-        });
-      } else {
-        res.status(404).send({ success: false, error: 'Loan nicht gefunden.' });
+        return res.status(500).send({ success: false, error: "Error fetching loan details: " + err.message });
       }
+  
+      if (result.length === 0) {
+        return res.status(404).send({ success: false, error: "loan not found or access denied" });
+      }
+  
+      const loan = result[0];
+  
+      // Archivieren (inkl. loanID)
+      const archiveQuery = 'INSERT INTO Archive (LoanID, UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?)';
+      db.query(archiveQuery, [loan.LoanID, loan.UserID, loan.Textfeld, loan.Startzeitpunkt, loan.Endzeitpunkt, loan.Vorname, loan.Nachname, loan.Adresse, loan.plz, loan.Tel], (err, archiveResult) => {
+        if (err) {
+          return res.status(500).send({ success: false, error: "Error archiving the Loan: " + err.message });
+        }
+  
+        // Löschen des Loans
+        db.query('DELETE FROM LoanDaten WHERE LoanID = ?', [LoanID], (err, deleteResult) => {
+          if (err) {
+            return res.status(500).send({ success: false, error: "Error deleting the Loan: " + err.message });
+          }
+          res.send({ success: true, message: "Loan successfully archived and deleted" });
+        });
+      });
     });
   }
   
   function getArchivedLoan(req, res) {
-    db.query('SELECT * FROM Archive WHERE LoanID IS NOT NULL', (err, results) => {
-        if (err) {
-            res.status(500).send({ success: false, error: err.message });
-        } else {
-            res.send({ success: true, data: results });
-        }
+    const currentUserId = req.user.id; 
+  
+    db.query('SELECT * FROM Archive WHERE UserID = ?', [currentUserId], (err, results) => {
+      if (err) {
+        res.status(500).send({ success: false, error: err.message });
+      } else {
+        res.send({ success: true, data: results });
+      }
     });
-}
+  }
+ 
+  // Middleware zur Authentifizierung
+  const requireAuth = function (req, res, next) {
+    const token = req.headers.authorization?.split(' ')[1];
+  
+    if (!token) {
+      return res.status(401).send({ success: false, error: 'Access denied -  Authentication Token not provided' });
+    }
+  
+    try {
+      const decoded = jwt.verify(token, secretKey);
+      req.user = decoded; // Dekodiertes User-Objekt anhängen
+      next();
+    } catch (err) {
+      res.status(400).send({ success: false, error: 'Invalid token' });
+    }
+  };
   
   module.exports = {
     getAllLoans,
   getLoansByPLZ,
   createLoan,
+  applyForLoan,
   acceptLoan,
   closeAndArchiveLoan,
-  getArchivedLoan
+  getArchivedLoan,
+  requireAuth
   };
   

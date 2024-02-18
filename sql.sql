@@ -81,6 +81,19 @@ CREATE TABLE IF NOT EXISTS LoanDaten (
     FOREIGN KEY (AcceptedByUserID) REFERENCES UserDaten(UserID)
 );
 
+CREATE TABLE IF NOT EXISTS LoanBewerbungen (
+    BewerbungID INT AUTO_INCREMENT PRIMARY KEY,
+    LoanID INT,
+    UserID INT,
+	AcceptedByUserID INT,
+    Vorname VARCHAR(60),
+    Nachname VARCHAR(60),
+    Tel VARCHAR(20),
+    Email VARCHAR(255),
+    Akzeptiert BOOLEAN DEFAULT false,
+    FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
+    FOREIGN KEY (AcceptedByUserID) REFERENCES UserDaten(UserID)
+
 -- Tabelle Archive erstellen
 CREATE TABLE IF NOT EXISTS Archive (
     ArchiveID INT AUTO_INCREMENT PRIMARY KEY,
@@ -98,6 +111,8 @@ CREATE TABLE IF NOT EXISTS Archive (
     Tel VARCHAR(20),
     FOREIGN KEY (JobID) REFERENCES JobDaten(JobID),
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
+    FOREIGN KEY (LoanID) REFERENCES LoanDaten(LoanID)
+    FOREIGN KEY (EventID) REFERENCES EventDaten(EventID)
 );
 
 

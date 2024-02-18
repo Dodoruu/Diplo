@@ -39,7 +39,7 @@ function getAllEvents(req, res) {
       if (err) {
         res.status(500).send({ success: false, error: err.message });
       } else {
-        res.send({ success: true, jobID: result.insertId });
+        res.send({ success: true, eventID: result.insertId });
       }
     });
   }
@@ -60,42 +60,67 @@ function getAllEvents(req, res) {
   
 
   function closeAndArchiveEvent(req, res) {
-    const { eventID } = req.params;
-    db.query('SELECT * FROM EventDaten WHERE EventID = ?', [eventID], (err, result) => {
-        if (err) {
-            res.status(500).send({ success: false, error: err.message });
-        } else if (result.length > 0) {
-            const event = result[0];
-            const archiveQuery = 'INSERT INTO Archive (EventID, UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?)';
-            db.query(archiveQuery, [event.EventID, event.UserID, event.Textfeld, event.Startzeitpunkt, event.Endzeitpunkt, event.Vorname, event.Nachname, event.Adresse, event.PLZ, event.Tel], (err, archiveResult) => {
-                if (err) {
-                    res.status(500).send({ success: false, error: "Error archiving the event: " + err.message });
-                } else {
-                    db.query('DELETE FROM EventDaten WHERE EventID = ?', [eventID], (err, deleteResult) => {
-                        if (err) {
-                            res.status(500).send({ success: false, error: "Error deleting the event: " + err.message });
-                        } else {
-                            res.send({ success: true, message: "Event successfully archived and deleted" });
-                        }
-                    });
-                }
-            });
-        } else {
-            res.status(404).send({ success: false, error: "Event not found" });
-        }
-    });
-}
-
-
-function getArchivedEvent(req, res) {
-  db.query('SELECT * FROM Archive WHERE EventID IS NOT NULL', (err, results) => {
+    const { EventID } = req.params;
+    const currentUserId = req.user.id; // Aus Authentifizierung abrufen
+  
+    // Eventdetails für Archiv abrufen, Berechtigungen prüfen
+    db.query('SELECT * FROM EventDaten WHERE EventID = ? AND UserID = ?', [EventID, currentUserId], (err, result) => {
       if (err) {
-          res.status(500).send({ success: false, error: err.message });
-      } else {
-          res.send({ success: true, data: results });
+        return res.status(500).send({ success: false, error: "Error fetching event details: " + err.message });
       }
-  });
-}
+  
+      if (result.length === 0) {
+        return res.status(404).send({ success: false, error: "event not found or access denied" });
+      }
+  
+      const event = result[0];
+  
+      // Archivieren (inkl. eventID)
+      const archiveQuery = 'INSERT INTO Archive (EventID, UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?)';
+      db.query(archiveQuery, [event.EventID, event.UserID, event.Textfeld, event.Startzeitpunkt, event.Endzeitpunkt, event.Vorname, event.Nachname, event.Adresse, event.plz, event.Tel], (err, archiveResult) => {
+        if (err) {
+          return res.status(500).send({ success: false, error: "Error archiving the Event: " + err.message });
+        }
+  
+        // Löschen des Event
+        db.query('DELETE FROM EventDaten WHERE EventID = ?', [EventID], (err, deleteResult) => {
+          if (err) {
+            return res.status(500).send({ success: false, error: "Error deleting the Event: " + err.message });
+          }
+          res.send({ success: true, message: "Event successfully archived and deleted" });
+        });
+      });
+    });
+  }
+  
+  function getArchivedEvent(req, res) {
+    const currentUserId = req.user.id; 
+  
+    db.query('SELECT * FROM Archive WHERE UserID = ?', [currentUserId], (err, results) => {
+      if (err) {
+        res.status(500).send({ success: false, error: err.message });
+      } else {
+        res.send({ success: true, data: results });
+      }
+    });
+  }
+ 
+  // Middleware zur Authentifizierung
+  const requireAuth = function (req, res, next) {
+    const token = req.headers.authorization?.split(' ')[1];
+  
+    if (!token) {
+      return res.status(401).send({ success: false, error: 'Access denied -  Authentication Token not provided' });
+    }
+  
+    try {
+      const decoded = jwt.verify(token, secretKey);
+      req.user = decoded; // Dekodiertes User-Objekt anhängen
+      next();
+    } catch (err) {
+      res.status(400).send({ success: false, error: 'Invalid token' });
+    }
+  };
   
   module.exports = {
     getAllEvents,
@@ -103,6 +128,7 @@ function getArchivedEvent(req, res) {
     createEvent,
     joinEvent,
     closeAndArchiveEvent,
-    getArchivedEvent
+    getArchivedEvent,
+    requireAuth
   };
   
