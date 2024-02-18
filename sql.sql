@@ -4,13 +4,15 @@ USE deine_datenbank;
 -- Tabelle UserDaten erstellen
 CREATE TABLE IF NOT EXISTS UserDaten (
     UserID INT AUTO_INCREMENT PRIMARY KEY,
-    Vorname VARCHAR(255) NOT NULL,
-    Nachname VARCHAR(255) NOT NULL,
+    Vorname VARCHAR(6ß) NOT NULL,
+    Nachname VARCHAR(60) NOT NULL,
     adresse VARCHAR(255),
     plz INT,
     Tel VARCHAR(20),
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) -- Hier wird das gehashte Passwort gespeichert
+    password VARCHAR(255)
+    cookie VARCHAR(255),
+    hasCompletedTutorial BOOLEAN DEFAULT false,
 );
 
 -- Tabelle JobDaten erstellen
@@ -21,8 +23,8 @@ CREATE TABLE IF NOT EXISTS JobDaten (
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
-    Vorname VARCHAR(255),
-    Nachname VARCHAR(255),
+    Vorname VARCHAR(60),
+    Nachname VARCHAR(60),
     Adresse VARCHAR(255),
     plz INT,
     Tel VARCHAR(20),
@@ -37,8 +39,8 @@ CREATE TABLE IF NOT EXISTS JobBewerbungen (
     JobID INT,
     UserID INT,
 	AcceptedByUserID INT,
-    Vorname VARCHAR(255),
-    Nachname VARCHAR(255),
+    Vorname VARCHAR(60),
+    Nachname VARCHAR(60),
     Tel VARCHAR(20),
     Email VARCHAR(255),
     Akzeptiert BOOLEAN DEFAULT false,
@@ -52,8 +54,8 @@ CREATE TABLE IF NOT EXISTS EventDaten (
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
-    Vorname VARCHAR(255),
-    Nachname VARCHAR(255),
+    Vorname VARCHAR(60),
+    Nachname VARCHAR(60),
     Adresse VARCHAR(255),
     PLZ INT,
     Tel VARCHAR(20),
@@ -69,8 +71,8 @@ CREATE TABLE IF NOT EXISTS LoanDaten (
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
-    Vorname VARCHAR(255),
-    Nachname VARCHAR(255),
+    Vorname VARCHAR(60),
+    Nachname VARCHAR(60),
     Adresse VARCHAR(255),
     plz INT,
     Tel VARCHAR(20),
@@ -89,11 +91,13 @@ CREATE TABLE IF NOT EXISTS Archive (
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
-    Vorname VARCHAR(255),
-    Nachname VARCHAR(255),
+    Vorname VARCHAR(60),
+    Nachname VARCHAR(60),
     Adresse VARCHAR(255),
     plz INT,
     Tel VARCHAR(20),
     FOREIGN KEY (JobID) REFERENCES JobDaten(JobID),
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
 );
+
+
