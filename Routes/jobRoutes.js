@@ -4,8 +4,8 @@ const jobController = require('../controllers/jobController');
 
 router.get('/all', jobController.getAllJobs);
 router.get('/me', jobController.getJobsByPLZ);
-router.post('/me/apply/:jobID', jobController.applyForJob);
 router.post('/create', jobController.createJob);
+router.post('/me/apply/:jobID',  requireAuth, jobController.applyForJob);
 router.post('/accept', jobController.acceptJob);
 router.post('/:jobID/close', requireAuth, jobController.closeAndArchiveJob); 
 router.get('/archive', requireAuth, jobController.getArchivedJobs);
