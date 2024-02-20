@@ -9,5 +9,6 @@ router.post('/me/apply/:jobID',  requireAuth, jobController.applyForJob);
 router.post('/accept', jobController.acceptJob);
 router.post('/:jobID/close', requireAuth, jobController.closeAndArchiveJob); 
 router.get('/archive', requireAuth, jobController.getArchivedJobs);
+router.delete('/:jobID', requireAuth, jobController.deleteJob);
 
 module.exports = router;

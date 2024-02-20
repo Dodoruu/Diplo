@@ -59,6 +59,52 @@ function getAllEvents(req, res) {
   }
   
 
+  function updateEvent(req, res) {
+    const Event = req.params.EventID;
+    const { Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel } = req.body;
+  
+    const query = 'UPDATE EventDaten SET Title = ?, Textfeld = ?, Startzeitpunkt = ?, Endzeitpunkt = ?, Vorname = ?, Nachname = ?, Adresse = ?, plz = ?, Tel WHERE EventID = ?';
+    
+    db.query(query, [Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel], (err, result) => {
+      if (err) {
+        res.status(500).send({ success: false, error: err.message });
+      } else {
+        res.send({ success: true, result: result });
+      }
+    });
+  }
+
+
+  function deleteEvent(req, res) {
+    const { EventID } = req.params;
+    const currentUserId = req.user.id; // Aus der Authentifizierung abrufen
+  
+    // Sicherstellen, dass nur der Eigentümer des Events diesen löschen kann
+    db.query('SELECT UserID FROM EventDaten WHERE EventID = ?', [EventID], (err, result) => {
+      if (err) {
+        return res.status(500).send({ success: false, error: "Error checking Event ownership: " + err.message });
+      }
+  
+      if (result.length === 0) {
+        return res.status(404).send({ success: false, error: "Event not found" });
+      }
+  
+      const eventCreatorID = result[0].UserID;
+  
+      if (eventCreatorID !== currentUserId) {
+        return res.status(403).send({ success: false, error: "Forbidden: Can only delete your own Events" });
+      }
+  
+      // Wenn Berechtigung erteilt, fortfahren mit dem Löschen
+      db.query('DELETE FROM EventDaten WHERE EventID = ?', [eventID], (err, deleteResult) => {
+        if (err) {
+          return res.status(500).send({ success: false, error: "Error deleting the Event: " + err.message });
+        }
+        res.send({ success: true, message: "Event successfully deleted" });
+      });
+    });
+  }
+
   function closeAndArchiveEvent(req, res) {
     const { EventID } = req.params;
     const currentUserId = req.user.id; // Aus Authentifizierung abrufen
@@ -127,6 +173,8 @@ function getAllEvents(req, res) {
     getEventsByPLZ,
     createEvent,
     joinEvent,
+    updateEvent,
+    deleteEvent,
     closeAndArchiveEvent,
     getArchivedEvent,
     requireAuth

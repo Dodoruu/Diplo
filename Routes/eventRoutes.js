@@ -8,5 +8,6 @@ router.post('/create', eventController.createEvent);
 router.post('/join', eventController.joinEvent);
 router.post('/:eventID/close', requireAuth,eventController.closeAndArchiveEvent);
 router.get('/archive', requireAuth, eventController.getArchivedEvent);
-
+router.delete('/:eventID', requireAuth, eventController.deleteEvent);
+router.put('/:eventID', eventController.updateEvent);
 module.exports = router;

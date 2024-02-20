@@ -96,6 +96,54 @@ function getAllJobs(req, res) {
       }
     });
   }
+
+  function updatejob(req, res) {
+    const Job = req.params.JobID;
+    const { Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel } = req.body;
+  
+    const query = 'UPDATE JobDaten SET Title = ?, Textfeld = ?, Startzeitpunkt = ?, Endzeitpunkt = ?, Vorname = ?, Nachname = ?, Adresse = ?, plz = ?, Tel WHERE JobID = ?';
+    
+    db.query(query, [Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, plz, Tel], (err, result) => {
+      if (err) {
+        res.status(500).send({ success: false, error: err.message });
+      } else {
+        res.send({ success: true, result: result });
+      }
+    });
+  }
+
+
+  function deleteJob(req, res) {
+    const { jobID } = req.params;
+    const currentUserId = req.user.id; // Aus der Authentifizierung abrufen
+  
+    // Sicherstellen, dass nur der Eigentümer des Jobs diesen löschen kann
+    db.query('SELECT UserID FROM JobDaten WHERE JobID = ?', [jobID], (err, result) => {
+      if (err) {
+        return res.status(500).send({ success: false, error: "Error checking job ownership: " + err.message });
+      }
+  
+      if (result.length === 0) {
+        return res.status(404).send({ success: false, error: "Job not found" });
+      }
+  
+      const jobCreatorID = result[0].UserID;
+  
+      if (jobCreatorID !== currentUserId) {
+        return res.status(403).send({ success: false, error: "Forbidden: Can only delete your own jobs" });
+      }
+  
+      // Wenn Berechtigung erteilt, fortfahren mit dem Löschen
+      db.query('DELETE FROM JobDaten WHERE JobID = ?', [jobID], (err, deleteResult) => {
+        if (err) {
+          return res.status(500).send({ success: false, error: "Error deleting the job: " + err.message });
+        }
+        res.send({ success: true, message: "Job successfully deleted" });
+      });
+    });
+  }
+
+
   
   function closeAndArchiveJob(req, res) {
     const { jobID } = req.params;
@@ -166,6 +214,8 @@ function getAllJobs(req, res) {
     createJob,
     applyForJob,
     acceptJob,
+    updatejob,
+    deleteJob,
     getArchivedJobs,
     closeAndArchiveJob, 
     requireAuth

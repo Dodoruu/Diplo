@@ -9,5 +9,6 @@ router.post('/me/apply/:loanID',  requireAuth, loanController.applyForLoan);
 router.post('/accept', loanController.acceptLoan);
 router.post('/:loanID/close', requireAuth, loanController.closeAndArchiveLoan);
 router.get('/archive', requireAuth, loanController.getArchivedLoan);
-
+router.delete('/:loanID', requireAuth, loanController.deleteLoan);
+router.put('/:loanID', loanController.updateloan);
 module.exports = router;

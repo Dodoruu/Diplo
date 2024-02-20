@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 
 const jwt = require('jsonwebtoken');
 const secretKey = 'dein_geheimer_schluessel';
+const { authenticate } = require('./authMiddleware');
 
 function generateToken(userID) {
   return jwt.sign({ userID }, secretKey, { expiresIn: '1h' }); 
@@ -143,6 +144,31 @@ function setUserHasTutorialCompleted(req, res) {
   });
 
 }
+  
+  function userDelete (req, res) {
+    const currentUserId = req.params.userID; // UserID to be deleted
+  
+    // Middleware-basierte Authentifizierung
+    authenticate(req, res, next => {
+      if (next) {
+        // Nur fortfahren, wenn der Benutzer authentifiziert ist
+        if (decoded.userID !== parseInt(currentUserId)) {
+          return res.status(403).send({ success: false, error: 'Forbidden. You can only delete your own account.' });
+        }
+  
+        // Löschvorgang
+        const query = 'DELETE FROM UserDaten WHERE UserID = ?';
+        db.query(query, [currentUserId], (err, result) => {
+          if (err) {
+            res.status(500).send({ success: false, error: err.message });
+          } else {
+            res.send({ success: true, message: 'User deleted successfully' });
+          }
+        });
+      }
+    });
+  }
+
 
 module.exports = {
   getAllUsers,
@@ -151,5 +177,6 @@ module.exports = {
   updateUser,
   getUserFromToken,
   getUserHasTutorialCompleted,
-  setUserHasTutorialCompleted
+  setUserHasTutorialCompleted,
+  userDelete
 };

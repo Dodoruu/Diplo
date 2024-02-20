@@ -95,6 +95,53 @@ function getAllLoans(req, res) {
       }
     });
   }
+
+  function updateloan(req, res) {
+    const Loan = req.params.LoanID;
+    const { Vorname, Nachname, adresse, plz, Tel, email } = req.body;
+  
+    const query = 'UPDATE LoanDaten SET Vorname = ?, Nachname = ?, adresse = ?, plz = ?, Tel = ?, email = ? WHERE LoanID = ?';
+    
+    db.query(query, [Vorname, Nachname, adresse, plz, Tel, email, LoanID], (err, result) => {
+      if (err) {
+        res.status(500).send({ success: false, error: err.message });
+      } else {
+        res.send({ success: true, result: result });
+      }
+    });
+  }
+
+
+  function deleteLoan(req, res) {
+    const { loanID } = req.params;
+    const currentUserId = req.user.id; // Aus der Authentifizierung abrufen
+  
+    // Sicherstellen, dass nur der Eigentümer des Loans diesen löschen kann
+    db.query('SELECT UserID FROM LoanDaten WHERE LoanID = ?', [loanID], (err, result) => {
+      if (err) {
+        return res.status(500).send({ success: false, error: "Error checking loan ownership: " + err.message });
+      }
+  
+      if (result.length === 0) {
+        return res.status(404).send({ success: false, error: "Loan not found" });
+      }
+  
+      const loanCreatorID = result[0].UserID;
+  
+      if (loanCreatorID !== currentUserId) {
+        return res.status(403).send({ success: false, error: "Forbidden: Can only delete your own loans" });
+      }
+  
+      // Wenn Berechtigung erteilt, fortfahren mit dem Löschen
+      db.query('DELETE FROM LoanDaten WHERE LoanID = ?', [loanID], (err, deleteResult) => {
+        if (err) {
+          return res.status(500).send({ success: false, error: "Error deleting the Loan: " + err.message });
+        }
+        res.send({ success: true, message: "Loan successfully deleted" });
+      });
+    });
+  }
+
   
   function closeAndArchiveLoan(req, res) {
     const { LoanID } = req.params;
@@ -165,8 +212,10 @@ function getAllLoans(req, res) {
   createLoan,
   applyForLoan,
   acceptLoan,
+  updateloan,
+  deleteLoan,
   closeAndArchiveLoan,
   getArchivedLoan,
-  requireAuth
+  requireAuth,
   };
   
