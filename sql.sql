@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS UserDaten (
     plz INT,
     Tel VARCHAR(20),
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255)
+    password VARCHAR(255),
     cookie VARCHAR(255),
-    hasCompletedTutorial BOOLEAN DEFAULT false,
+    hasCompletedTutorial BOOLEAN DEFAULT false
 );
 
 -- Tabelle JobDaten erstellen
@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS LoanBewerbungen (
     Akzeptiert BOOLEAN DEFAULT false,
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
     FOREIGN KEY (AcceptedByUserID) REFERENCES UserDaten(UserID)
+    );
 
 -- Tabelle Archive erstellen
 CREATE TABLE IF NOT EXISTS Archive (
@@ -110,8 +111,8 @@ CREATE TABLE IF NOT EXISTS Archive (
     plz INT,
     Tel VARCHAR(20),
     FOREIGN KEY (JobID) REFERENCES JobDaten(JobID),
-    FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
-    FOREIGN KEY (LoanID) REFERENCES LoanDaten(LoanID)
+    FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
+    FOREIGN KEY (LoanID) REFERENCES LoanDaten(LoanID),
     FOREIGN KEY (EventID) REFERENCES EventDaten(EventID)
 );
 
