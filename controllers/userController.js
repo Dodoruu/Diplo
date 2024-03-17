@@ -1,25 +1,10 @@
 const bcrypt = require('bcrypt');
-
-
-
 const jwt = require('jsonwebtoken');
 const secretKey = 'dein_geheimer_schluessel';
-const { authenticate } = require('./authMiddleware');
 
 function generateToken(userID) {
   return jwt.sign({ userID }, secretKey, { expiresIn: '1h' }); 
 }
-
-module.exports = {
-  getAllUsers,
-  registerUser,
-  loginUser,
-  updateUser,
-  generateToken
-};
-
-
-
 
 function getAllUsers(req, res) {
   db.query('SELECT * FROM UserDaten', (err, results) => {
@@ -169,12 +154,12 @@ function setUserHasTutorialCompleted(req, res) {
     });
   }
 
-
 module.exports = {
   getAllUsers,
   registerUser,
   loginUser,
   updateUser,
+  generateToken,
   getUserFromToken,
   getUserHasTutorialCompleted,
   setUserHasTutorialCompleted,

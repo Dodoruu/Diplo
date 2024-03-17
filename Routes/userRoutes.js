@@ -6,7 +6,7 @@ router.get('/', userController.getAllUsers);
 router.post('/register', userController.registerUser);
 router.post('/login', userController.loginUser);
 router.put('/:userID', userController.updateUser);
-router.delete('/:userID', requireAuth, userController.userDelete);
+router.delete('/:userID', userController.userDelete);
 router.post('/getUserFromToken', userController.getUserFromToken);
 router.get('/getUserHasTutorialCompleted', userController.getUserHasTutorialCompleted);
 router.post('/setUserHasTutorialCompleted', userController.setUserHasTutorialCompleted);
