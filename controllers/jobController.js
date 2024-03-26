@@ -144,7 +144,28 @@ function applyForJob(req, res) {
   });
 }
 
+function deleteJobApply(req, res) {
+  const userID = req.jwt.userID;
+  const jobID = req.params.jobID;
 
+  const query = `
+    DELETE FROM JobBewerbungen
+    WHERE UserID = ? AND JobID = ?
+  `;
+
+  db.query(query, [userID, jobID], (err, result) => {
+    if (err) {
+      console.error('Error deleting job applications:', err);
+      res.status(500).send({ success: false, error: 'Internal server error' });
+    } else {
+      if (result.affectedRows === 0) {
+        return res.status(404).send({ success: false, error: 'Keine Bewerbungen für diesen Job gefunden' });
+      }
+
+      res.send({ success: true, message: `${result.affectedRows} Bewerbung(en) erfolgreich gelöscht` });
+    }
+  });
+}
 
 function getjobapply(req, res) {
   const userID = req.jwt.userID;
@@ -309,42 +330,6 @@ async function acceptJob(req, res) {
   });
 }
 
-// async function acceptJob(req, res){
-// if(!req.body.bewerbungID){
-//   return res.status(400).send({ success: false, error: ' bewerbungID fehlt ' });
-// }
-// let bewerbungID = parseInt(req.body.bewerbungID);
-
-// if(!bewerbungID){
-//   return res.status(400).send({ success: false, error: ' bewerbungID ist ungültig ' });
-// }
-
-// const query = 'SELECT JobDaten.UserID From JobBewerbungen JOIN JobDaten ON JobBewerbungen.JobID = JobDaten.JobID WHERE JobBewerbungen.BewerbungID = ?';
-
-// db.query(query, [bewerbungID], (err, results) => {
-//   if (err) {
-//     res.status(500).send({ success: false, error: err.message });
-//   } else {
-
-//     if( results < 1 ){
-//       return res.status(400).send({ success: false, error: ' bewerbungID exestiert nicht' });
-//     }
-
-//     if (results[0].UserID != req.jwt.userID){
-//       return res.status(403).send({ success: false, error: 'verbundener Job gehört dir nicht' });
-//     }
-
-//     const query = 'UPDATE JobBewerbungen SET Akzeptiert = TRUE WHERE BewerbungID = ?';
-//     db.query(query, [bewerbungID], (err, _) => {
-//       if(err){
-//         res.status(500).send({ success: false, error: err.message });
-//       } else {
-//         res.status(200).send({ success: true});
-//       }
-//     });
-//   }
-// });
-// }
 
 async function denyJob(req, res) {
   const userID = req.jwt.userID;
@@ -396,45 +381,6 @@ async function denyJob(req, res) {
     }
   });
 }
-
-// async function denyJob(req, res){
-//   if(!req.body.bewerbungID){
-//     return res.status(400).send({ success: false, error: ' bewerbungID fehlt ' });
-//   }
-//   let bewerbungID = parseInt(req.body.bewerbungID);
-  
-//   if(!bewerbungID){
-//     return res.status(400).send({ success: false, error: ' bewerbungID ist ungültig ' });
-//   }
-  
-//   const query = 'SELECT JobDaten.UserID From JobBewerbungen JOIN JobDaten ON JobBewerbungen.JobID = JobDaten.JobID WHERE JobBewerbungen.BewerbungID = ?';
-  
-//   db.query(query, [bewerbungID], (err, results) => {
-//     if (err) {
-//       res.status(500).send({ success: false, error: err.message });
-//     } else {
-  
-//       if( results < 1 ){
-//         return res.status(400).send({ success: false, error: ' bewerbungID exestiert nicht' });
-//       }
-  
-//       if (results[0].UserID != req.jwt.userID){
-//         return res.status(403).send({ success: false, error: 'verbundener Job gehört dir nicht' });
-//       }
-  
-//       const query = 'UPDATE JobBewerbungen SET Akzeptiert = FALSE WHERE BewerbungID = ?';
-//       db.query(query, [bewerbungID], (err, _) => {
-//         if(err){
-//           res.status(500).send({ success: false, error: err.message });
-//         } else {
-//           res.status(200).send({ success: true});
-//         }
-//       });
-//     }
-//   });
-//   }
-
-
 
   function getAcceptedApplicants(req, res) {
     const userID = req.jwt.userID;
@@ -661,15 +607,81 @@ function closeAndArchiveJob(req, res) {
 }
 
 function getArchivedJobs(req, res) {
-  console.log (req.user);
-  const userId = req.jwt.userID;
+  const userID = req.jwt.userID;
+  const jobID = req.params.jobID;
 
+  const query = `
+    SELECT 
+      ja.Title, 
+      ja.Textfeld, 
+      ja.Startzeitpunkt, 
+      ja.Endzeitpunkt, 
+      ja.Vorname, 
+      ja.Nachname, 
+      ja.Adresse, 
+      ja.Plz, 
+      ja.Tel
+    FROM 
+      JobArchive ja
+    WHERE 
+      ja.JobID = ? AND ja.UserID = ?
+  `;
 
-  db.query('SELECT * FROM JobArchive WHERE UserID = ?', [userId], (err, results) => {
+  db.query(query, [jobID, userID], (err, jobResults) => {
     if (err) {
-      res.status(500).send({ success: false, error: err.message });
+      console.error('Error retrieving archived job details for employer:', err);
+      res.status(500).send({ success: false, error: 'Internal server error' });
     } else {
-      res.send({ success: true, data: results });
+      if (jobResults.length === 0) {
+        return res.status(404).send({ success: false, error: 'Archivierter Job nicht gefunden oder Zugriff verweigert' });
+      }
+
+      const jobDetails = {
+        Title: jobResults[0].Title,
+        Textfeld: jobResults[0].Textfeld,
+        Startzeitpunkt: jobResults[0].Startzeitpunkt,
+        Endzeitpunkt: jobResults[0].Endzeitpunkt,
+        Vorname: jobResults[0].Vorname,
+        Nachname: jobResults[0].Nachname,
+        Adresse: jobResults[0].Adresse,
+        Plz: jobResults[0].Plz,
+        Tel: jobResults[0].Tel,
+        Bewerber: []
+      };
+
+      const applicantQuery = `
+        SELECT
+          jba.BewerbungID,
+          jba.UserID AS BewerberID,
+          jba.Vorname AS BewerberVorname,
+          jba.Nachname AS BewerberNachname,
+          jba.Tel AS BewerberTel,
+          jba.Email AS BewerberEmail,
+          jba.Akzeptiert
+        FROM
+          JobBewerbungArchive jba
+        WHERE
+          jba.JobArchiveID = ?
+      `;
+
+      db.query(applicantQuery, [jobID], (err, applicantResults) => {
+        if (err) {
+          console.error('Error retrieving applicants for archived job:', err);
+          res.status(500).send({ success: false, error: 'Internal server error' });
+        } else {
+          jobDetails.Bewerber = applicantResults.map(result => ({
+            BewerbungID: result.BewerbungID,
+            BewerberID: result.BewerberID,
+            Vorname: result.BewerberVorname,
+            Nachname: result.BewerberNachname,
+            Tel: result.BewerberTel,
+            Email: result.BewerberEmail,
+            Akzeptiert: result.Akzeptiert
+          }));
+
+          res.send({ success: true, data: jobDetails });
+        }
+      });
     }
   });
 }
@@ -727,6 +739,7 @@ module.exports = {
   getAllmyjob,
   createJob,
   applyForJob,
+  deleteJobApply,
   getjobapply,
   getAlljobapply,
   getAppliedJobs,

@@ -38,6 +38,6 @@ router.get('/me/accepted/:loanID', authMiddleware, loanController.getAcceptedApp
 router.post('/:loanID/close', authMiddleware, loanController.closeAndArchiveLoan);
 router.get('/archive/owner', authMiddleware, loanController.getArchivedLoans);
 router.get('/archive/applicant', authMiddleware, loanController.getArchivedApplicant);
-router.get('/archive/applicant', authMiddleware, loanController.getArchivedLoansForContractor);
+router.get('/archive/apply', authMiddleware, loanController.getArchivedLoansForContractor);
 
 module.exports = router;

@@ -132,6 +132,28 @@ function applyForLoan(req, res) {
   });
 }
 
+function deleteLoanApply(req, res) {
+  const userID = req.jwt.userID;
+  const loanID = req.params.loanID;
+
+  const query = `
+    DELETE FROM LoanBewerbungen 
+    WHERE UserID = ? AND LoanID = ?
+  `;
+
+  db.query(query, [userID, loanID], (err, result) => {
+    if (err) {
+      console.error('Error deleting loan applications:', err);
+      res.status(500).send({ success: false, error: 'Internal server error' });
+    } else {
+      if (result.affectedRows === 0) {
+        return res.status(404).send({ success: false, error: 'Keine Bewerbungen für diesen Loan gefunden' });
+      }
+      res.send({ success: true, message: `${result.affectedRows} Bewerbung(en) erfolgreich gelöscht` });
+    }
+  });
+}
+
 function getLoanapply(req, res) {
   const userID = req.jwt.userID;
   const loanID = req.params.loanID;
@@ -633,6 +655,7 @@ module.exports = {
   getAllmyLoans,
   createLoan,
   applyForLoan,
+  deleteLoanApply,
   getLoanapply,
   getAllLoanapply,
   getAppliedLoans,
