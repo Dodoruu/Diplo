@@ -17,12 +17,12 @@ function getAllUsers(req, res) {
 }
 
 function registerUser(req, res) {
-  const { Vorname, Nachname, adresse, plz, Tel, email, password } = req.body;
+  const { Vorname, Nachname, Adresse, Plz, Tel, Email, Password } = req.body;
 
-  let hash =  bcrypt.hashSync(password, 10);
+  let hash =  bcrypt.hashSync(Password, 10);
   
-  const query = 'INSERT INTO UserDaten (Vorname, Nachname, adresse, plz, Tel, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)';
-  db.query(query, [Vorname, Nachname, adresse, plz, Tel, email, hash], (err, result) => {
+  const query = 'INSERT INTO UserDaten (Vorname, Nachname, Adresse, Plz, Tel, Email, Password) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [Vorname, Nachname, Adresse, Plz, Tel, Email, hash], (err, result) => {
     if (err) {
       console.log(err);
       res.status(500).send({ success: false, error: 'Internal Server Error' });
@@ -35,31 +35,22 @@ function registerUser(req, res) {
 
 
 function loginUser(req, res) {
-  const { email, password } = req.body;
-  if(email == '' || email == null || password == '' || password == null)
+  const { Email, Password } = req.body;
+  if(Email == '' || Email == null || Password == '' || Password == null)
     res.status(401).send({ success: false, error: 'Mail oder Passwort ist leer.' });
 
-  const query = 'SELECT * FROM UserDaten WHERE email = ?';
+  const query = 'SELECT * FROM UserDaten WHERE Email = ?';
 
-  db.query(query, [email], (err, results) => {
+  db.query(query, [Email], (err, results) => {
     if (err) {
       res.status(500).send({ success: false, error: err.message });
     } else {
       if (results.length > 0) {
         const user = results[0];
-        bcrypt.compare(password, user.password, (err, result) => {
+        bcrypt.compare(Password, user.Password, (err, result) => {
           if (result) {
             const token = generateToken(user.UserID);
-            
-            //store the token into the database
-            const storeTokenQuery = 'UPDATE UserDaten SET cookie = ? WHERE UserID = ?';
-            db.query(storeTokenQuery, [token, user.UserID], (err, updateResults) => {
-              if (err) {
-                res.status(500).send({ success: false, error: err.message });
-              } else {
-                res.send({ success: true, token });
-              }
-            });
+            res.send({ success: true, token });
           } else {
             res.status(401).send({ success: false, error: 'Falsches Passwort' });
           }
@@ -72,30 +63,99 @@ function loginUser(req, res) {
 }
 
 function getUserFromToken(req, res) {
-  const {token} = req.body;
+  const userID = req.jwt.userID;
 
-  const query = 'SELECT * FROM UserDaten WHERE cookie = ?'
-  db.query(query, [token], (err, result) => {
+  const query = 'SELECT *, DATEDIFF(CURDATE(), RegistrierDatum) AS Tage_seit_Registrierung FROM UserDaten WHERE UserID = ?';
+  db.query(query, [userID], (err, result) => {
     if (err) {
       res.status(500).send({ success: false, error: err.message });
     } else {
       res.send({ success: true, user: result });
     }
   });
-
 }
 
 function updateUser(req, res) {
-  const userID = req.params.userID;
-  const { Vorname, Nachname, adresse, plz, Tel, email } = req.body;
+  const userID = req.jwt.userID;
+  const { Vorname, Nachname, Adresse, Plz, Tel, Email } = req.body;
 
-  const query = 'UPDATE UserDaten SET Vorname = ?, Nachname = ?, adresse = ?, plz = ?, Tel = ?, email = ? WHERE UserID = ?';
-  
-  db.query(query, [Vorname, Nachname, adresse, plz, Tel, email, userID], (err, result) => {
+  const fields = [];
+  const values = [];
+
+  // Überprüfen, welche Felder vorhanden sind und sie der Abfrage hinzufügen
+  if (Vorname !== undefined) {
+    fields.push('Vorname = ?');
+    values.push(Vorname);
+  }
+  if (Nachname !== undefined) {
+    fields.push('Nachname = ?');
+    values.push(Nachname);
+  }
+  if (Adresse !== undefined) {
+    fields.push('Adresse = ?');
+    values.push(Adresse);
+  }
+  if (Plz !== undefined) {
+    fields.push('Plz = ?');
+    values.push(Plz);
+  }
+  if (Tel !== undefined) {
+    fields.push('Tel = ?');
+    values.push(Tel);
+  }
+  if (Email !== undefined) {
+    fields.push('Email = ?');
+    values.push(Email);
+  }
+
+  // Wenn keine Felder vorhanden sind, senden wir eine Fehlermeldung
+  if (fields.length === 0) {
+    res.status(400).send({ success: false, error: 'No fields provided for update' });
+    return;
+  }
+
+  const query = `UPDATE UserDaten SET ${fields.join(', ')} WHERE UserID = ?`;
+  values.push(userID);
+
+  db.query(query, values, (err, result) => {
     if (err) {
       res.status(500).send({ success: false, error: err.message });
     } else {
       res.send({ success: true, result: result });
+    }
+  });
+}
+
+function changePassword(req, res) {
+  const userID = req.jwt.userID;
+  const { Email, OldPassword, NewPassword } = req.body;
+
+  const query = 'SELECT * FROM UserDaten WHERE UserID = ? AND Email = ?';
+
+  db.query(query, [userID, Email], (err, results) => {
+    if (err) {
+      res.status(500).send({ success: false, error: err.message });
+    } else {
+      if (results.length > 0) {
+        const user = results[0];
+        bcrypt.compare(OldPassword, user.Password, (err, result) => {
+          if (result) {
+            let hash = bcrypt.hashSync(NewPassword, 10);
+            const updateQuery = 'UPDATE UserDaten SET Password = ? WHERE UserID = ?';
+            db.query(updateQuery, [hash, userID], (err, updateResult) => {
+              if (err) {
+                res.status(500).send({ success: false, error: err.message });
+              } else {
+                res.send({ success: true, message: 'Passwort erfolgreich geändert' });
+              }
+            });
+          } else {
+            res.status(401).send({ success: false, error: 'Altes Passwort ist falsch' });
+          }
+        });
+      } else {
+        res.status(401).send({ success: false, error: 'Benutzer nicht gefunden oder E-Mail-Adresse stimmt nicht überein' });
+      }
     }
   });
 }
@@ -131,19 +191,10 @@ function setUserHasTutorialCompleted(req, res) {
 }
   
   function userDelete (req, res) {
-    const currentUserId = req.params.userID; // UserID to be deleted
-  
-    // Middleware-basierte Authentifizierung
-    authenticate(req, res, next => {
-      if (next) {
-        // Nur fortfahren, wenn der Benutzer authentifiziert ist
-        if (decoded.userID !== parseInt(currentUserId)) {
-          return res.status(403).send({ success: false, error: 'Forbidden. You can only delete your own account.' });
-        }
-  
+    const userID = req.jwt.userID;
         // Löschvorgang
         const query = 'DELETE FROM UserDaten WHERE UserID = ?';
-        db.query(query, [currentUserId], (err, result) => {
+        db.query(query, [userID], (err, result) => {
           if (err) {
             res.status(500).send({ success: false, error: err.message });
           } else {
@@ -151,14 +202,14 @@ function setUserHasTutorialCompleted(req, res) {
           }
         });
       }
-    });
-  }
+    
 
 module.exports = {
   getAllUsers,
   registerUser,
   loginUser,
   updateUser,
+  changePassword,
   generateToken,
   getUserFromToken,
   getUserHasTutorialCompleted,

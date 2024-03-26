@@ -7,9 +7,12 @@ const jobRoutes = require('./Routes/jobRoutes');
 const eventRoutes = require('./Routes/eventRoutes'); // Anpassung hier
 const loanRoutes = require('./Routes/loanRoutes');
 const cors=require('cors');
-app.use(cors());
+const cookieParser = require('cookie-parser');
 
+app.use(cors());
+app.use(cookieParser());
 app.use(express.json());
+
 
 // Verbinde Routen
 app.use('/users', userRoutes);
