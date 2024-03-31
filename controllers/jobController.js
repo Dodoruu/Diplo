@@ -279,6 +279,32 @@ function getAppliedJobs(req, res) {
   });
 }
 
+function getAcceptedJobs(req, res) {
+  const userID = req.jwt.userID;
+
+
+  const getAcceptedJobsQuery = `
+  select * from JobBewerbungen
+  left join JobDaten on JobBewerbungen.JobID = JobDaten.JobID
+  WHERE JobBewerbungen.UserID = ?
+  `;
+  db.query(getAcceptedJobsQuery, [userID], (err, results) => {
+    if (err) {
+      res.status(500).send({ success: false, error: err.message });
+      return;
+    }
+
+    if (results.length === 0) {
+      res.send({ success: true, data: [] });
+      return;
+    }
+
+    res.send({ success: true, data: results });
+
+  });
+}
+
+
 async function acceptJob(req, res) {
   const userID = req.jwt.userID;
   const jobID = req.params.jobID;
@@ -391,6 +417,7 @@ async function denyJob(req, res) {
       SELECT COUNT(*) AS count
       FROM JobDaten
       WHERE JobID = ? AND UserID = ?
+      AND Akzeptiert = 1
     `;
     db.query(checkOwnerQuery, [jobID, userID], (err, ownerResult) => {
       if (err) {
@@ -540,8 +567,8 @@ function closeAndArchiveJob(req, res) {
         });
       } else {
         // Der Job ist noch nicht in "archive" vorhanden, füge ihn mit dem gleichen JobID-Wert hinzu
-        const archiveQuery = 'INSERT INTO JobArchive (JobID, UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, Plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        db.query(archiveQuery, [jobID, job.UserID, job.Textfeld, job.Startzeitpunkt, job.Endzeitpunkt, job.Vorname, job.Nachname, job.Adresse, job.Plz, job.Tel], (err, archiveResult) => {
+        const archiveQuery = 'INSERT INTO JobArchive (JobID, UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, Plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        db.query(archiveQuery, [jobID, job.UserID,job.Title, job.Textfeld, job.Startzeitpunkt, job.Endzeitpunkt, job.Vorname, job.Nachname, job.Adresse, job.Plz, job.Tel], (err, archiveResult) => {
           if (err) {
             console.log('Error archiving the job:', err);
             return res.status(500).send({ success: false, error: "Error archiving the job: " + err.message });
@@ -608,26 +635,15 @@ function closeAndArchiveJob(req, res) {
 
 function getArchivedJobs(req, res) {
   const userID = req.jwt.userID;
-  const jobID = req.params.jobID;
 
   const query = `
-    SELECT 
-      ja.Title, 
-      ja.Textfeld, 
-      ja.Startzeitpunkt, 
-      ja.Endzeitpunkt, 
-      ja.Vorname, 
-      ja.Nachname, 
-      ja.Adresse, 
-      ja.Plz, 
-      ja.Tel
+    SELECT *
     FROM 
       JobArchive ja
-    WHERE 
-      ja.JobID = ? AND ja.UserID = ?
+    WHERE ja.UserID = ?
   `;
 
-  db.query(query, [jobID, userID], (err, jobResults) => {
+  db.query(query, [userID], (err, jobResults) => {
     if (err) {
       console.error('Error retrieving archived job details for employer:', err);
       res.status(500).send({ success: false, error: 'Internal server error' });
@@ -636,55 +652,72 @@ function getArchivedJobs(req, res) {
         return res.status(404).send({ success: false, error: 'Archivierter Job nicht gefunden oder Zugriff verweigert' });
       }
 
-      const jobDetails = {
-        Title: jobResults[0].Title,
-        Textfeld: jobResults[0].Textfeld,
-        Startzeitpunkt: jobResults[0].Startzeitpunkt,
-        Endzeitpunkt: jobResults[0].Endzeitpunkt,
-        Vorname: jobResults[0].Vorname,
-        Nachname: jobResults[0].Nachname,
-        Adresse: jobResults[0].Adresse,
-        Plz: jobResults[0].Plz,
-        Tel: jobResults[0].Tel,
-        Bewerber: []
-      };
+      const archivedJobs = []
 
-      const applicantQuery = `
-        SELECT
-          jba.BewerbungID,
-          jba.UserID AS BewerberID,
-          jba.Vorname AS BewerberVorname,
-          jba.Nachname AS BewerberNachname,
-          jba.Tel AS BewerberTel,
-          jba.Email AS BewerberEmail,
-          jba.Akzeptiert
-        FROM
-          JobBewerbungArchive jba
-        WHERE
-          jba.JobArchiveID = ?
-      `;
+      jobResults.forEach((archivedJob) => {
+        const jobDetails = {
+          Title: archivedJob.Title,
+          Textfeld: archivedJob.Textfeld,
+          Startzeitpunkt: archivedJob.Startzeitpunkt,
+          Endzeitpunkt: archivedJob.Endzeitpunkt,
+          Vorname: archivedJob.Vorname,
+          Nachname: archivedJob.Nachname,
+          Adresse: archivedJob.Adresse,
+          Plz: archivedJob.Plz,
+          Tel: archivedJob.Tel,
+          Bewerber: []
+        };
 
-      db.query(applicantQuery, [jobID], (err, applicantResults) => {
-        if (err) {
-          console.error('Error retrieving applicants for archived job:', err);
-          res.status(500).send({ success: false, error: 'Internal server error' });
-        } else {
-          jobDetails.Bewerber = applicantResults.map(result => ({
-            BewerbungID: result.BewerbungID,
-            BewerberID: result.BewerberID,
-            Vorname: result.BewerberVorname,
-            Nachname: result.BewerberNachname,
-            Tel: result.BewerberTel,
-            Email: result.BewerberEmail,
-            Akzeptiert: result.Akzeptiert
-          }));
+        const applicantQuery = `
+          SELECT
+            jba.BewerbungID,
+            jba.UserID AS BewerberID,
+            jba.Vorname AS BewerberVorname,
+            jba.Nachname AS BewerberNachname,
+            jba.Tel AS BewerberTel,
+            jba.Email AS BewerberEmail,
+            jba.Akzeptiert
+          FROM
+            JobBewerbungArchive jba
+          WHERE
+            jba.JobArchiveID = ?
+          AND jba.Akzeptiert = 1
+        `;
 
-          res.send({ success: true, data: jobDetails });
-        }
+        db.query(applicantQuery, [archivedJob.JobID], (err, applicantResults) => {
+          if (err) {
+            console.error('Error retrieving applicants for archived job:', err);
+            res.status(500).send({ success: false, error: 'Internal server error' });
+          } else {
+            applicantResults.forEach((result) => {
+              const bewerber = {
+                BewerbungID: result.BewerbungID,
+                BewerberID: result.BewerberID,
+                Vorname: result.BewerberVorname,
+                Nachname: result.BewerberNachname,
+                Tel: result.BewerberTel,
+                Email: result.BewerberEmail,
+                Akzeptiert: result.Akzeptiert
+              };
+              
+              jobDetails.Bewerber.push(bewerber);
+            });
+
+            console.log(jobDetails.Bewerber[0]); // optional: Zum Debuggen
+
+            archivedJobs.push(jobDetails);
+
+            // Überprüfen, ob alle Datenbankabfragen abgeschlossen sind, bevor res.send ausgeführt wird
+            if (archivedJobs.length === jobResults.length) {
+              res.send({ success: true, data: archivedJobs });
+            }
+          }
+        });
       });
     }
   });
 }
+
 
 function getArchivedApplicant(req, res) {
   console.log (req.user);
@@ -751,5 +784,6 @@ module.exports = {
   getArchivedJobs,
   closeAndArchiveJob,
   getArchivedApplicant,
-  getArchivedJobsForContractor
+  getArchivedJobsForContractor,
+  getAcceptedJobs
 };

@@ -1,11 +1,11 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const secretKey = 'dein_geheimer_schluessel';
-
+ 
 function generateToken(userID) {
-  return jwt.sign({ userID }, secretKey, { expiresIn: '1h' }); 
+  return jwt.sign({ userID }, secretKey, { expiresIn: '1h' });
 }
-
+ 
 function getAllUsers(req, res) {
   db.query('SELECT * FROM UserDaten', (err, results) => {
     if (err) {
@@ -15,12 +15,14 @@ function getAllUsers(req, res) {
     }
   });
 }
-
+ 
 function registerUser(req, res) {
   const { Vorname, Nachname, Adresse, Plz, Tel, Email, Password } = req.body;
+ 
 
+ 
   let hash =  bcrypt.hashSync(Password, 10);
-  
+ 
   const query = 'INSERT INTO UserDaten (Vorname, Nachname, Adresse, Plz, Tel, Email, Password) VALUES (?, ?, ?, ?, ?, ?, ?)';
   db.query(query, [Vorname, Nachname, Adresse, Plz, Tel, Email, hash], (err, result) => {
     if (err) {
@@ -31,19 +33,22 @@ function registerUser(req, res) {
     }
   });
 }
-
-
-
+ 
+ 
+ 
 function loginUser(req, res) {
   const { Email, Password } = req.body;
-  if(Email == '' || Email == null || Password == '' || Password == null)
+  if(Email == '' || Email == null || Password == '' || Password == null){
     res.status(401).send({ success: false, error: 'Mail oder Passwort ist leer.' });
-
+    return
+  }
+ 
   const query = 'SELECT * FROM UserDaten WHERE Email = ?';
-
+ 
   db.query(query, [Email], (err, results) => {
     if (err) {
       res.status(500).send({ success: false, error: err.message });
+      return
     } else {
       if (results.length > 0) {
         const user = results[0];
@@ -51,20 +56,23 @@ function loginUser(req, res) {
           if (result) {
             const token = generateToken(user.UserID);
             res.send({ success: true, token });
+            return
           } else {
             res.status(401).send({ success: false, error: 'Falsches Passwort' });
+            return
           }
         });
       } else {
         res.status(401).send({ success: false, error: 'Benutzer nicht gefunden' });
+        return
       }
     }
   });
 }
-
+ 
 function getUserFromToken(req, res) {
   const userID = req.jwt.userID;
-
+ 
   const query = 'SELECT *, DATEDIFF(CURDATE(), RegistrierDatum) AS Tage_seit_Registrierung FROM UserDaten WHERE UserID = ?';
   db.query(query, [userID], (err, result) => {
     if (err) {
@@ -74,14 +82,14 @@ function getUserFromToken(req, res) {
     }
   });
 }
-
+ 
 function updateUser(req, res) {
   const userID = req.jwt.userID;
   const { Vorname, Nachname, Adresse, Plz, Tel, Email } = req.body;
-
+ 
   const fields = [];
   const values = [];
-
+ 
   // Überprüfen, welche Felder vorhanden sind und sie der Abfrage hinzufügen
   if (Vorname !== undefined) {
     fields.push('Vorname = ?');
@@ -107,16 +115,16 @@ function updateUser(req, res) {
     fields.push('Email = ?');
     values.push(Email);
   }
-
+ 
   // Wenn keine Felder vorhanden sind, senden wir eine Fehlermeldung
   if (fields.length === 0) {
     res.status(400).send({ success: false, error: 'No fields provided for update' });
     return;
   }
-
+ 
   const query = `UPDATE UserDaten SET ${fields.join(', ')} WHERE UserID = ?`;
   values.push(userID);
-
+ 
   db.query(query, values, (err, result) => {
     if (err) {
       res.status(500).send({ success: false, error: err.message });
@@ -125,13 +133,13 @@ function updateUser(req, res) {
     }
   });
 }
-
+ 
 function changePassword(req, res) {
   const userID = req.jwt.userID;
   const { Email, OldPassword, NewPassword } = req.body;
-
+ 
   const query = 'SELECT * FROM UserDaten WHERE UserID = ? AND Email = ?';
-
+ 
   db.query(query, [userID, Email], (err, results) => {
     if (err) {
       res.status(500).send({ success: false, error: err.message });
@@ -159,11 +167,11 @@ function changePassword(req, res) {
     }
   });
 }
-
-
+ 
+ 
 function getUserHasTutorialCompleted(req, res) {
   const userID = req.query.userID;
-
+ 
   const query = 'SELECT hasCompletedTutorial FROM UserDaten WHERE UserID = ?'
   db.query(query, [userID], (err, result) => {
     if (err) {
@@ -172,13 +180,13 @@ function getUserHasTutorialCompleted(req, res) {
       res.send({ success: true, result: result });
     }
   });
-
+ 
 }
-
+ 
 function setUserHasTutorialCompleted(req, res) {
   const userID = req.query.userID;
-
-
+ 
+ 
   const query = 'UPDATE UserDaten SET hasCompletedTutorial = 1 WHERE UserID = ?'
   db.query(query, [userID], (err, result) => {
     if (err) {
@@ -187,9 +195,9 @@ function setUserHasTutorialCompleted(req, res) {
       res.send({ success: true, result: result });
     }
   });
-
+ 
 }
-  
+ 
   function userDelete (req, res) {
     const userID = req.jwt.userID;
         // Löschvorgang
@@ -202,8 +210,8 @@ function setUserHasTutorialCompleted(req, res) {
           }
         });
       }
-    
-
+   
+ 
 module.exports = {
   getAllUsers,
   registerUser,
@@ -216,3 +224,4 @@ module.exports = {
   setUserHasTutorialCompleted,
   userDelete
 };
+ 

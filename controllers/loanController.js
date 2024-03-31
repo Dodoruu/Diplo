@@ -507,8 +507,8 @@ function closeAndArchiveLoan(req, res) {
           res.send({ success: true, message: "Loan already archived and deleted from loandaten" });
         });
       } else {
-        const archiveQuery = 'INSERT INTO LoanArchive (LoanID, UserID, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, Plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        db.query(archiveQuery, [loan.LoanID, loan.UserID, loan.Textfeld, loan.Startzeitpunkt, loan.Endzeitpunkt, loan.Vorname, loan.Nachname, loan.Adresse, loan.Plz, loan.Tel], (err, archiveResult) => {
+        const archiveQuery = 'INSERT INTO LoanArchive (LoanID, UserID, Title, Textfeld, Startzeitpunkt, Endzeitpunkt, Vorname, Nachname, Adresse, Plz, Tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        db.query(archiveQuery, [loan.LoanID, loan.UserID, loan.Title, loan.Textfeld, loan.Startzeitpunkt, loan.Endzeitpunkt, loan.Vorname, loan.Nachname, loan.Adresse, loan.Plz, loan.Tel], (err, archiveResult) => {
           if (err) {
             console.log('Error archiving the loan:', err);
             return res.status(500).send({ success: false, error: "Error archiving the loan: " + err.message });
@@ -538,81 +538,134 @@ function closeAndArchiveLoan(req, res) {
 }
 
 function getArchivedLoans(req, res) {
-    const userID = req.jwt.userID;
-    const loanID = req.params.loanID;
-  
-    const query = `
-      SELECT 
-        la.Textfeld, 
-        la.Startzeitpunkt, 
-        la.Endzeitpunkt, 
-        la.Vorname, 
-        la.Nachname, 
-        la.Adresse, 
-        la.Plz, 
-        la.Tel
-      FROM 
-        LoanArchive la
-      WHERE 
-        la.LoanID = ? AND la.UserID = ?
-    `;
-  
-    db.query(query, [loanID, userID], (err, loanResults) => {
-      if (err) {
-        console.error('Error retrieving archived loan details for user:', err);
-        res.status(500).send({ success: false, error: 'Internal server error' });
-      } else {
-        if (loanResults.length === 0) {
-          return res.status(404).send({ success: false, error: 'Archivierter Loan nicht gefunden oder Zugriff verweigert' });
-        }
-  
+  const userID = req.jwt.userID;
+
+  const query = `
+    SELECT *
+    FROM 
+      LoanArchive ja
+    WHERE ja.UserID = ?
+  `;
+
+  db.query(query, [userID], (err, loanResults) => {
+    if (err) {
+      console.error('Error retrieving archived loan details for employer:', err);
+      res.status(500).send({ success: false, error: 'Internal server error' });
+    } else {
+      if (loanResults.length === 0) {
+        return res.status(404).send({ success: false, error: 'Archivierte Leihgabe nicht gefunden oder Zugriff verweigert' });
+      }
+
+      const archivedLoans = []
+
+      loanResults.forEach((archivedLoan) => {
         const loanDetails = {
-          Textfeld: loanResults[0].Textfeld,
-          Startzeitpunkt: loanResults[0].Startzeitpunkt,
-          Endzeitpunkt: loanResults[0].Endzeitpunkt,
-          Vorname: loanResults[0].Vorname,
-          Nachname: loanResults[0].Nachname,
-          Adresse: loanResults[0].Adresse,
-          Plz: loanResults[0].Plz,
-          Tel: loanResults[0].Tel,
+          Title: archivedLoan.Title,
+          Textfeld: archivedLoan.Textfeld,
+          Startzeitpunkt: archivedLoan.Startzeitpunkt,
+          Endzeitpunkt: archivedLoan.Endzeitpunkt,
+          Vorname: archivedLoan.Vorname,
+          Nachname: archivedLoan.Nachname,
+          Adresse: archivedLoan.Adresse,
+          Plz: archivedLoan.Plz,
+          Tel: archivedLoan.Tel,
           Bewerber: []
         };
-  
+
         const applicantQuery = `
-          SELECT 
-            lba.BewerbungID, 
-            lba.UserID AS BewerberID, 
-            lba.Vorname AS BewerberVorname, 
-            lba.Nachname AS BewerberNachname, 
-            lba.Tel AS BewerberTel, 
-            lba.Email AS BewerberEmail, 
-            lba.Akzeptiert
-          FROM 
-            LoanBewerbungArchive lba
-          WHERE 
-            lba.LoanArchiveID = ?
+          SELECT
+            jba.BewerbungID,
+            jba.UserID AS BewerberID,
+            jba.Vorname AS BewerberVorname,
+            jba.Nachname AS BewerberNachname,
+            jba.Tel AS BewerberTel,
+            jba.Email AS BewerberEmail,
+            jba.Akzeptiert
+          FROM
+            JobBewerbungArchive jba
+          WHERE
+            jba.JobArchiveID = ?
+          AND jba.Akzeptiert = 1
         `;
-  
-        db.query(applicantQuery, [loanID], (err, applicantResults) => {
+
+        db.query(applicantQuery, [archivedLoan.JobID], (err, applicantResults) => {
           if (err) {
             console.error('Error retrieving applicants for archived loan:', err);
             res.status(500).send({ success: false, error: 'Internal server error' });
           } else {
-            loanDetails.Bewerber = applicantResults.map(result => ({
-              BewerbungID: result.BewerbungID,
-              BewerberID: result.BewerberID,
-              Vorname: result.BewerberVorname,
-              Nachname: result.BewerberNachname,
-              Tel: result.BewerberTel,
-              Email: result.BewerberEmail,
-              Akzeptiert: result.Akzeptiert
-            }));
-            res.send({ success: true, data: loanDetails });
+            applicantResults.forEach((result) => {
+              const bewerber = {
+                BewerbungID: result.BewerbungID,
+                BewerberID: result.BewerberID,
+                Vorname: result.BewerberVorname,
+                Nachname: result.BewerberNachname,
+                Tel: result.BewerberTel,
+                Email: result.BewerberEmail,
+                Akzeptiert: result.Akzeptiert
+              };
+              
+              loanDetails.Bewerber.push(bewerber);
+            });
+
+         
+
+            archivedLoans.push(loanDetails);
+
+        
+            if (archivedLoans.length === loanResults.length) {
+              res.send({ success: true, data: archivedLoans });
+            }
           }
         });
-      }
-    });
-  
+      });
+    }
+  });
+}
+
+
+function getArchivedApplicant(req, res) {
+  console.log (req.user);
+  const userId = req.jwt.userID;
+
+
+  db.query('SELECT * FROM JobBewerbungArchive WHERE UserID = ?', [userId], (err, results) => {
+    if (err) {
+      res.status(500).send({ success: false, error: err.message });
+    } else {
+      res.send({ success: true, data: results });
+    }
+  });
+}
+
+function getArchivedJobsForContractor(req, res) {
+  const userID = req.jwt.userID;
+
+  const query = `
+    SELECT 
+      ja.Title, 
+      ja.Textfeld, 
+      ja.Startzeitpunkt, 
+      ja.Endzeitpunkt, 
+      ja.Vorname, 
+      ja.Nachname, 
+      ja.Adresse, 
+      ja.Plz, 
+      ja.Tel
+    FROM 
+      JobArchive ja
+      INNER JOIN JobBewerbungArchive jba ON ja.JobArchiveID = jba.JobArchiveID
+    WHERE 
+      jba.UserID = ? AND jba.Akzeptiert = true
+  `;
+
+  db.query(query, [userID], (err, results) => {
+    if (err) {
+      console.error('Error retrieving accepted archived jobs for contractor:', err);
+      res.status(500).send({ success: false, error: 'Internal server error' });
+    } else {
+      res.send({ success: true, data: results });
+    }
+  });
 }
 
 function getArchivedApplicant(req, res) {
@@ -647,6 +700,31 @@ function getArchivedLoansForContractor(req, res) {
   });
 }
 
+function getAcceptedLoans(req, res) {
+  const userID = req.jwt.userID;
+
+
+  const getAcceptedLoansQuery = `
+  select * from LoanBewerbungen
+  left join LoanDaten on LoanBewerbungen.LoanID = LoanDaten.LoanID
+  WHERE LoanBewerbungen.UserID = ?
+  `;
+  db.query(getAcceptedLoansQuery, [userID], (err, results) => {
+    if (err) {
+      res.status(500).send({ success: false, error: err.message });
+      return;
+    }
+
+    if (results.length === 0) {
+      res.send({ success: true, data: [] });
+      return;
+    }
+
+    res.send({ success: true, data: results });
+
+  });
+}
+
 module.exports = {
   getAllLoans,
   getLoansByPLZ,
@@ -667,5 +745,6 @@ module.exports = {
   getArchivedLoans,
   closeAndArchiveLoan,
   getArchivedApplicant,
-  getArchivedLoansForContractor
+  getArchivedLoansForContractor,
+  getAcceptedLoans
 };

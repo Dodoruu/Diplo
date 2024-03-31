@@ -1,10 +1,10 @@
 CREATE DATABASE IF NOT EXISTS deine_datenbank;
 USE deine_datenbank;
-
+ 
 -- Tabelle UserDaten erstellen
 CREATE TABLE IF NOT EXISTS UserDaten (
     UserID INT AUTO_INCREMENT PRIMARY KEY,
-    RegistrierDatum DATETIME DEFAULT CURRENT_TIMESTAMP;
+    RegistrierDatum DATETIME DEFAULT CURRENT_TIMESTAMP,
     Vorname VARCHAR(60) NOT NULL,
     Nachname VARCHAR(60) NOT NULL,
     Adresse VARCHAR(255),
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS UserDaten (
     Password VARCHAR(255),
     hasCompletedTutorial BOOLEAN DEFAULT false
 );
-
+ 
 -- Tabelle JobDaten erstellen
 CREATE TABLE IF NOT EXISTS JobDaten (
     JobID INT AUTO_INCREMENT PRIMARY KEY,
@@ -30,8 +30,8 @@ CREATE TABLE IF NOT EXISTS JobDaten (
     Tel VARCHAR(20),
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
 );
-
-
+ 
+ 
 CREATE TABLE IF NOT EXISTS JobBewerbungen (
     BewerbungID INT AUTO_INCREMENT PRIMARY KEY,
     JobID INT,
@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS JobBewerbungen (
     Akzeptiert BOOLEAN DEFAULT false,
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
 );
-
-
+ 
+ 
 CREATE TABLE IF NOT EXISTS LoanDaten (
     LoanID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT,
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS LoanDaten (
     Tel VARCHAR(20),
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
 );
-
+ 
 CREATE TABLE IF NOT EXISTS LoanBewerbungen (
     BewerbungID INT AUTO_INCREMENT PRIMARY KEY,
     LoanID INT,
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS LoanBewerbungen (
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
     FOREIGN KEY (LoanID) REFERENCES LoanDaten(LoanID)
 );
-
+ 
 CREATE TABLE IF NOT EXISTS EventDaten (
     EventID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT,
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS EventDaten (
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
     FOREIGN KEY (JoinedByUserID) REFERENCES UserDaten(UserID)
 );
-
+ 
 CREATE TABLE IF NOT EXISTS EventTeilnehmer (
     BewerbungID INT AUTO_INCREMENT PRIMARY KEY,
     EventID INT,
@@ -100,12 +100,13 @@ CREATE TABLE IF NOT EXISTS EventTeilnehmer (
     Email VARCHAR(255),
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
 );
-
+ 
 -- Tabelle Archive erstellen
 CREATE TABLE IF NOT EXISTS JobArchive (
     JobArchiveID INT AUTO_INCREMENT PRIMARY KEY,
     JobID Int,
     UserID INT,
+    Title TEXT,
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
@@ -116,7 +117,7 @@ CREATE TABLE IF NOT EXISTS JobArchive (
     Tel VARCHAR(20),
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
 );
-
+ 
 CREATE TABLE IF NOT EXISTS JobBewerbungArchive (
   BewerbungID INT AUTO_INCREMENT PRIMARY KEY,
   JobArchiveID INT,
@@ -129,11 +130,12 @@ CREATE TABLE IF NOT EXISTS JobBewerbungArchive (
   FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
   FOREIGN KEY (JobArchiveID) REFERENCES JobArchive(JobArchiveID)
 );
-
+ 
 CREATE TABLE IF NOT EXISTS LoanArchive (
     ArchiveID INT AUTO_INCREMENT PRIMARY KEY,
     LoanID INT,
     UserID INT,
+    Title TEXT,
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
@@ -144,7 +146,7 @@ CREATE TABLE IF NOT EXISTS LoanArchive (
     Tel VARCHAR(20),
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
 );
-
+ 
 CREATE TABLE IF NOT EXISTS LoanBewerbungArchive (
     BewerbungID INT AUTO_INCREMENT PRIMARY KEY,
     LoanArchiveID INT,
@@ -156,12 +158,15 @@ CREATE TABLE IF NOT EXISTS LoanBewerbungArchive (
     Akzeptiert BOOLEAN DEFAULT false,
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID),
     FOREIGN KEY (LoanArchiveID) REFERENCES LoanArchive(ArchiveID)
-
+ 
 );
 
+ 
 CREATE TABLE IF NOT EXISTS EventArchive (
     ArchiveID INT AUTO_INCREMENT PRIMARY KEY,
+    EventID INT,
     UserID INT,
+    Title TEXT,
     Textfeld TEXT,
     Startzeitpunkt DATETIME,
     Endzeitpunkt DATETIME,
@@ -172,10 +177,11 @@ CREATE TABLE IF NOT EXISTS EventArchive (
     Tel VARCHAR(20),
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
 );
-
-
+ 
+ 
 CREATE TABLE IF NOT EXISTS EventTeilnehmerArchive (
     BewerbungID INT AUTO_INCREMENT PRIMARY KEY,
+    EventID INT,
     UserID INT,
     Vorname VARCHAR(60),
     Nachname VARCHAR(60),
@@ -183,3 +189,4 @@ CREATE TABLE IF NOT EXISTS EventTeilnehmerArchive (
     Email VARCHAR(255),
     FOREIGN KEY (UserID) REFERENCES UserDaten(UserID)
 );
+ 

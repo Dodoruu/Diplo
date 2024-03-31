@@ -9,7 +9,7 @@ router.get('/all', loanController.getAllLoans);
 router.get('/me', loanController.getLoansByPLZ);
 
 //Owner sicht auf seine Loans
-router.get('/me/:loanID', authMiddleware, loanController.getmyLoan);
+router.get('/me/myLoan/:loanID', authMiddleware, loanController.getmyLoan);
 router.get('/my', authMiddleware, loanController.getAllmyLoans);
 
 //User sicht auf Loan
@@ -22,17 +22,18 @@ router.patch('/:loanID', authMiddleware, loanController.updateLoan);
 
 //Anmelden und Abmelden
 router.post('/me/apply/:loanID', loanController.applyForLoan);
-router.delete('/me/apply/:loanID', loanController.deleteLoanApply);
+router.delete('/me/apply/:loanID',authMiddleware, loanController.deleteLoanApply);
 
 //Annehmen und Ablehnen
-router.post('/loanID/accept', authMiddleware, loanController.acceptLoan);
-router.post('/loanID/deny', authMiddleware, loanController.denyLoan);
+router.post('/:loanID/accept', authMiddleware, loanController.acceptLoan);
+router.post('/:loanID/deny', authMiddleware, loanController.denyLoan);
 
 //Bewerbungsinformationen
 router.get('/me/:loanID/applicants', authMiddleware, loanController.getLoanapply);
 router.get('/me/applicants', authMiddleware, loanController.getAllLoanapply);
 router.get('/me/applys', authMiddleware, loanController.getAppliedLoans);
 router.get('/me/accepted/:loanID', authMiddleware, loanController.getAcceptedApplicants);
+router.get('/me/acceptedLoans', authMiddleware, loanController.getAcceptedLoans);
 
 //Archive
 router.post('/:loanID/close', authMiddleware, loanController.closeAndArchiveLoan);
