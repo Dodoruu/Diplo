@@ -19,6 +19,11 @@ function getAllUsers(req, res) {
 function registerUser(req, res) {
   const { Vorname, Nachname, Adresse, Plz, Tel, Email, Password } = req.body;
 
+  if (Password.length < 8) {
+    res.status(400).send({ success: false, error: 'Das Passwort muss mindestens 8 Zeichen lang sein' });
+    return;
+  }
+
   let hash =  bcrypt.hashSync(Password, 10);
   
   const query = 'INSERT INTO UserDaten (Vorname, Nachname, Adresse, Plz, Tel, Email, Password) VALUES (?, ?, ?, ?, ?, ?, ?)';
@@ -47,12 +52,14 @@ function loginUser(req, res) {
     } else {
       if (results.length > 0) {
         const user = results[0];
+        console.log(Password, user.Password);
         bcrypt.compare(Password, user.Password, (err, result) => {
           if (result) {
             const token = generateToken(user.UserID);
             res.send({ success: true, token });
           } else {
             res.status(401).send({ success: false, error: 'Falsches Passwort' });
+            //console.log(Password, user.Password);
           }
         });
       } else {

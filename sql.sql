@@ -4,7 +4,7 @@ USE deine_datenbank;
 -- Tabelle UserDaten erstellen
 CREATE TABLE IF NOT EXISTS UserDaten (
     UserID INT AUTO_INCREMENT PRIMARY KEY,
-    RegistrierDatum DATETIME DEFAULT CURRENT_TIMESTAMP;
+    RegistrierDatum DATETIME DEFAULT CURRENT_TIMESTAMP,
     Vorname VARCHAR(60) NOT NULL,
     Nachname VARCHAR(60) NOT NULL,
     Adresse VARCHAR(255),
