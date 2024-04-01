@@ -42,7 +42,7 @@ function getMyEvent(req, res) {
     if (err) {
       res.status(500).send({ success: false, error: err.message });
     } else if (results.length === 0) {
-      res.status(404).send({ success: false, error: "Event not found" });
+      res.status(404).send({ success: false, error: "Event not found!" });
     } else {
       res.send({ success: true, data: results[0] });
     }
@@ -63,7 +63,7 @@ function getEvent(req, res) {
     if (err) {
       res.status(500).send({ success: false, error: err.message });
     } else if (results.length === 0) {
-      res.status(404).send({ success: false, error: "Event not found" });
+      res.status(404).send({ success: false, error: "Event not found...." });
     } else {
       res.send({ success: true, data: results[0] });
     }
@@ -116,6 +116,8 @@ function joinEvent(req, res) {
 function leaveEvent(req, res) {
   const userID = req.jwt.userID;
   const eventID = req.params.eventID;
+
+  console.log(userID, eventID);
 
   const query = 'DELETE FROM EventTeilnehmer WHERE UserID = ? AND EventID = ?';
 
@@ -317,20 +319,36 @@ function closeAndArchiveEvent(req, res) {
       const teilnehmerQuery = 'SELECT * FROM EventTeilnehmer WHERE EventID = ?';
       db.query(teilnehmerQuery, [eventID], (err, teilnehmerResults) => {
         if (err) {
+       
           res.status(500).send({ success: false, error: err.message });
           return;
         }
 
-        const archiveTeilnehmerQuery = 'INSERT INTO EventTeilnehmerArchive (EventID, BewerbungID, UserID, Vorname, Nachname, Tel, Email) VALUES ?';
-        const teilnehmerData = teilnehmerResults.map(teilnehmer => [eventID, teilnehmer.BewerbungID, teilnehmer.UserID, teilnehmer.Vorname, teilnehmer.Nachname, teilnehmer.Tel, teilnehmer.Email]);
+        if(teilnehmerResults.length > 0){
+          const archiveTeilnehmerQuery = 'INSERT INTO EventTeilnehmerArchive (EventID, BewerbungID, UserID, Vorname, Nachname, Tel, Email) VALUES ?';
+          const teilnehmerData = teilnehmerResults.map(teilnehmer => [eventID, teilnehmer.BewerbungID, teilnehmer.UserID, teilnehmer.Vorname, teilnehmer.Nachname, teilnehmer.Tel, teilnehmer.Email]);
+          
+          db.query(archiveTeilnehmerQuery, [teilnehmerData], (err, archiveTeilnehmerResult) => {
+            if (err) {
+              res.status(500).send({ success: false, error: err.message });
+              return;
+            }
+  
+            console.log('Point 2')
+          });          
 
-        db.query(archiveTeilnehmerQuery, [teilnehmerData], (err, archiveTeilnehmerResult) => {
-          if (err) {
-            res.status(500).send({ success: false, error: err.message });
-            return;
-          }
+          const deleteTeilnehmerQuery = 'DELETE FROM EventTeilnehmer WHERE EventID = ?';
+          db.query(deleteTeilnehmerQuery, [eventID], (err, deleteTeilnehmerResult) => {
+            if (err) {
+              res.status(500).send({ success: false, error: err.message });
+              return;
+            }
+            console.log('Point 4')
+            res.send({ success: true, message: 'Event and participants archived successfully' });
+          });
+        }
 
-          // Event und Teilnehmer aus den Originaltabellen löschen
+        // Event und Teilnehmer aus den Originaltabellen löschen
           const deleteEventQuery = 'DELETE FROM EventDaten WHERE EventID = ?';
           db.query(deleteEventQuery, [eventID], (err, deleteEventResult) => {
             if (err) {
@@ -338,35 +356,19 @@ function closeAndArchiveEvent(req, res) {
               return;
             }
 
-            const deleteTeilnehmerQuery = 'DELETE FROM EventTeilnehmer WHERE EventID = ?';
-            db.query(deleteTeilnehmerQuery, [eventID], (err, deleteTeilnehmerResult) => {
-              if (err) {
-                res.status(500).send({ success: false, error: err.message });
-                return;
-              }
+            console.log('Point 3')
 
-              res.send({ success: true, message: 'Event and participants archived successfully' });
-            });
+
           });
-        });
       });
     });
   });
 }
 
-function getArchivedEvents(req, res) {
-  const userID = req.jwt.userID;
 
-  const query = 'SELECT * FROM EventArchive WHERE UserID = ?';
 
-  db.query(query, [userID], (err, results) => {
-    if (err) {
-      res.status(500).send({ success: false, error: err.message });
-    } else {
-      res.send({ success: true, data: results });
-    }
-  });
-}
+
+
 
 function getArchivedTeilnehmer(req, res) {
   const userID = req.jwt.userID;
@@ -402,6 +404,88 @@ function getArchivedEventsForUser(req, res) {
       res.status(500).send({ success: false, error: err.message });
     } else {
       res.send({ success: true, data: results });
+    }
+  });
+}
+
+function getArchivedEvents(req, res) {
+  const userID = req.jwt.userID;
+
+  const query = `
+    SELECT *
+    FROM 
+    EventArchive ja
+    WHERE ja.UserID = ?
+  `;
+
+  db.query(query, [userID], (err, eventResults) => {
+    if (err) {
+      console.error('Error retrieving archived event details for employer:', err);
+      res.status(500).send({ success: false, error: 'Internal server error' });
+    } else {
+      if (eventResults.length === 0) {
+        return res.status(404).send({ success: false, error: 'Archiviertes Event nicht gefunden oder Zugriff verweigert' });
+      }
+
+      const archivedEvents = []
+
+      eventResults.forEach((archivedEvent) => {
+        const eventDetails = {
+          Title: archivedEvent.Title,
+          Textfeld: archivedEvent.Textfeld,
+          Startzeitpunkt: archivedEvent.Startzeitpunkt,
+          Endzeitpunkt: archivedEvent.Endzeitpunkt,
+          Vorname: archivedEvent.Vorname,
+          Nachname: archivedEvent.Nachname,
+          Adresse: archivedEvent.Adresse,
+          Plz: archivedEvent.Plz,
+          Tel: archivedEvent.Tel,
+          Bewerber: []
+        };
+
+        const applicantQuery = `
+          SELECT
+            jba.BewerbungID,
+            jba.UserID AS BewerberID,
+            jba.Vorname AS BewerberVorname,
+            jba.Nachname AS BewerberNachname,
+            jba.Tel AS BewerberTel,
+            jba.Email AS BewerberEmail
+          FROM
+            EventTeilnehmerArchive jba
+          WHERE
+            jba.EventID = ?
+        `;
+
+        db.query(applicantQuery, [archivedEvent.EventID], (err, applicantResults) => {
+          if (err) {
+            console.error('Error retrieving applicants for archived event:', err);
+            res.status(500).send({ success: false, error: 'Internal server error' });
+          } else {
+            applicantResults.forEach((result) => {
+              const bewerber = {
+                BewerbungID: result.BewerbungID,
+                BewerberID: result.BewerberID,
+                Vorname: result.BewerberVorname,
+                Nachname: result.BewerberNachname,
+                Tel: result.BewerberTel,
+                Email: result.BewerberEmail
+              };
+              
+              eventDetails.Bewerber.push(bewerber);
+            });
+
+            console.log(eventDetails.Bewerber[0]); 
+
+            archivedEvents.push(eventDetails);
+
+     
+            if (archivedEvents.length === eventResults.length) {
+              res.send({ success: true, data: archivedEvents });
+            }
+          }
+        });
+      });
     }
   });
 }

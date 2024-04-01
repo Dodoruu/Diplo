@@ -13,6 +13,7 @@ router.get('/me/:jobID/applicants', authMiddleware, jobController.getjobapply);
 router.get('/me/applicants', authMiddleware, jobController.getAlljobapply);
 router.get('/me/applys', authMiddleware, jobController.getAppliedJobs);
 router.get('/me/accepted/:jobID', authMiddleware, jobController.getAcceptedApplicants);
+router.get('/me/acceptedJobs', authMiddleware, jobController.getAcceptedJobs);
 
 //Owner sicht auf seine Jobs
 router.get('/me/:jobID', authMiddleware, jobController.getMyjob);
@@ -29,7 +30,7 @@ router.patch('/:jobID', authMiddleware, jobController.updateJob);
 
 //Anmelden und Abmelden
 router.post('/me/apply/:jobID', jobController.applyForJob);
-router.delete('/me/apply/:jobID', jobController.deleteJobApply);
+router.delete('/me/apply/:jobID', authMiddleware, jobController.deleteJobApply);
 
 //Annehmen und Ablehnen
 router.post('/:jobID/accept', authMiddleware, jobController.acceptJob);
