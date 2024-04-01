@@ -623,50 +623,6 @@ function getArchivedLoans(req, res) {
 }
 
 
-function getArchivedApplicant(req, res) {
-  console.log (req.user);
-  const userId = req.jwt.userID;
-
-
-  db.query('SELECT * FROM JobBewerbungArchive WHERE UserID = ?', [userId], (err, results) => {
-    if (err) {
-      res.status(500).send({ success: false, error: err.message });
-    } else {
-      res.send({ success: true, data: results });
-    }
-  });
-}
-
-function getArchivedJobsForContractor(req, res) {
-  const userID = req.jwt.userID;
-
-  const query = `
-    SELECT 
-      ja.Title, 
-      ja.Textfeld, 
-      ja.Startzeitpunkt, 
-      ja.Endzeitpunkt, 
-      ja.Vorname, 
-      ja.Nachname, 
-      ja.Adresse, 
-      ja.Plz, 
-      ja.Tel
-    FROM 
-      JobArchive ja
-      INNER JOIN JobBewerbungArchive jba ON ja.JobArchiveID = jba.JobArchiveID
-    WHERE 
-      jba.UserID = ? AND jba.Akzeptiert = true
-  `;
-
-  db.query(query, [userID], (err, results) => {
-    if (err) {
-      console.error('Error retrieving accepted archived jobs for contractor:', err);
-      res.status(500).send({ success: false, error: 'Internal server error' });
-    } else {
-      res.send({ success: true, data: results });
-    }
-  });
-}
 
 function getArchivedApplicant(req, res) {
   console.log(req.user);

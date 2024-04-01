@@ -1,8 +1,29 @@
 const request = require('supertest');
 const express = require('express');
-const server = require('./index');
+const { startServer, closeServer } = require('./index');
 const connection = require('./db');
 
+let server;
+
+beforeAll(async () => {
+  const { server: serverInstance, port } = await startServer(3000);
+  server = serverInstance;
+});
+
+afterAll(async () => {
+  await closeServer(server);
+  await new Promise((resolve, reject) => {
+    connection.end((err) => {
+      if (err) {
+        console.error('Fehler beim Schließen der Datenbankverbindung:', err);
+        reject(err);
+      } else {
+        console.log('Datenbankverbindung erfolgreich geschlossen');
+        resolve();
+      }
+    });
+  });
+});
 // Erstelle einen Mock-Server
 const mockApp = express();
 mockApp.use(express.json());
@@ -174,19 +195,5 @@ describe('Benutzerprofilverwaltung', () => {
 
     expect(res.statusCode).toEqual(200);
     expect(res.body.erfolg).toBe(true);
-  });
-});
-
-afterAll((done) => {
-  connection.end((connectionErr) => {
-    if (connectionErr) {
-      console.error('Fehler beim Schließen der Datenbankverbindung:', connectionErr);
-    }
-    server.close((serverErr) => {
-      if (serverErr) {
-        console.error('Fehler beim Schließen des Servers:', serverErr);
-      }
-      done();
-    });
   });
 });
