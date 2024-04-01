@@ -27,10 +27,10 @@ const runTests = (workerIndex) => {
   });
 };
 
-// Starten Sie den Server in einem separaten Prozess
+
 const serverProcess = require('child_process').spawn('node', ['startServer.js']);
 
-// Starten Sie die Tests in Worker-Threads
+
 Promise.all(Array.from({ length: numWorkers }, (_, i) => runTests(i)))
   .then(() => {
     console.log('Alle Tests abgeschlossen');

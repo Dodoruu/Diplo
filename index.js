@@ -10,7 +10,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const portfinder = require('portfinder');
 
-// Konfiguriere den Portbereich und die maximale Anzahl von Versuchen
+
 portfinder.basePort = 3000;
 portfinder.highestPort = 4000;
 portfinder.maxRetries = 10;

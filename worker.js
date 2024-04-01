@@ -6,7 +6,7 @@ const runTests = async () => {
     const { server, port } = await startServer(workerData.port);
     console.log(`Tests werden auf Port ${port} ausgeführt`);
 
-    // Führen Sie hier Ihre Tests aus
+  
 
     await closeServer(server);
     console.log('Tests abgeschlossen');
