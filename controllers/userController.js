@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const secretKey = 'dein_geheimer_schluessel';
 
+
 function generateToken(userID) {
   return jwt.sign({ userID }, secretKey, { expiresIn: '1h' }); 
 }

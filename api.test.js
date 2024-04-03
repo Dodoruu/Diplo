@@ -1,5 +1,4 @@
 const request = require('supertest');
-const express = require('express');
 const { startServer, closeServer } = require('./index');
 const connection = require('./db');
 
@@ -24,49 +23,10 @@ afterAll(async () => {
     });
   });
 });
-// Erstelle einen Mock-Server
-const mockApp = express();
-mockApp.use(express.json());
-
-mockApp.post('/benutzer/registrieren', (req, res) => {
-  res.status(200).json({ erfolg: true });
-});
-
-mockApp.post('/benutzer/anmelden', (req, res) => {
-  res.status(200).json({ erfolg: true, token: 'mock_token' });
-});
-
-mockApp.post('/jobs/erstellen', (req, res) => {
-  res.status(200).json({ erfolg: true, jobID: 1 });
-});
-
-mockApp.post('/jobs/mich/bewerben/:jobID', (req, res) => {
-  res.status(200).json({ erfolg: true });
-});
-
-mockApp.post('/jobs/:jobID/annehmen', (req, res) => {
-  res.status(200).json({ erfolg: true });
-});
-
-mockApp.patch('/jobs/:jobID', (req, res) => {
-  res.status(200).json({ erfolg: true });
-});
-
-mockApp.delete('/jobs/:jobID', (req, res) => {
-  res.status(200).json({ erfolg: true });
-});
-
-mockApp.patch('/benutzer/:id', (req, res) => {
-  res.status(200).json({ erfolg: true });
-});
-
-mockApp.patch('/benutzer/passwort-ändern', (req, res) => {
-  res.status(200).json({ erfolg: true });
-});
 
 describe('Benutzerregistrierung und -anmeldung', () => {
   it('sollte einen neuen Benutzer registrieren', async () => {
-    const res = await request(mockApp)
+    const res = await request(server)
       .post('/benutzer/registrieren')
       .send({
         Vorname: 'Max',
@@ -80,7 +40,7 @@ describe('Benutzerregistrierung und -anmeldung', () => {
   });
 
   it('sollte den Benutzer anmelden', async () => {
-    const res = await request(mockApp)
+    const res = await request(server)
       .post('/benutzer/anmelden')
       .send({
         Email: 'test@example.com',
@@ -95,7 +55,7 @@ describe('Benutzerregistrierung und -anmeldung', () => {
 
 describe('Erstellung, Bewerbung und Verwaltung von Jobs', () => {
   it('sollte einen neuen Job erstellen', async () => {
-    const res = await request(mockApp)
+    const res = await request(server)
       .post('/jobs/erstellen')
       .set('Cookie', 'jwt=mock_token')
       .send({
@@ -116,7 +76,7 @@ describe('Erstellung, Bewerbung und Verwaltung von Jobs', () => {
   });
 
   it('sollte sich auf den Job bewerben', async () => {
-    const res = await request(mockApp)
+    const res = await request(server)
       .post('/jobs/mich/bewerben/1')
       .set('Cookie', 'jwt=mock_token')
       .send({
@@ -132,7 +92,7 @@ describe('Erstellung, Bewerbung und Verwaltung von Jobs', () => {
   });
 
   it('sollte den Bewerber annehmen', async () => {
-    const res = await request(mockApp)
+    const res = await request(server)
       .post('/jobs/1/annehmen')
       .set('Cookie', 'jwt=mock_token')
       .send({
@@ -144,7 +104,7 @@ describe('Erstellung, Bewerbung und Verwaltung von Jobs', () => {
   });
 
   it('sollte den Job aktualisieren', async () => {
-    const res = await request(mockApp)
+    const res = await request(server)
       .patch('/jobs/1')
       .set('Cookie', 'jwt=mock_token')
       .send({
@@ -157,7 +117,7 @@ describe('Erstellung, Bewerbung und Verwaltung von Jobs', () => {
   });
 
   it('sollte den Job löschen', async () => {
-    const res = await request(mockApp)
+    const res = await request(server)
       .delete('/jobs/1')
       .set('Cookie', 'jwt=mock_token');
 
@@ -168,7 +128,7 @@ describe('Erstellung, Bewerbung und Verwaltung von Jobs', () => {
 
 describe('Benutzerprofilverwaltung', () => {
   it('sollte das Benutzerprofil aktualisieren', async () => {
-    const res = await request(mockApp)
+    const res = await request(server)
       .patch('/benutzer/1')
       .set('Cookie', 'jwt=mock_token')
       .send({
@@ -184,7 +144,7 @@ describe('Benutzerprofilverwaltung', () => {
   });
 
   it('sollte das Benutzerpasswort ändern', async () => {
-    const res = await request(mockApp)
+    const res = await request(server)
       .patch('/benutzer/passwort-ändern')
       .set('Cookie', 'jwt=mock_token')
       .send({

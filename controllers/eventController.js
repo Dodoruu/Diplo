@@ -1,3 +1,5 @@
+
+
 function getAllEvents(req, res) {
   db.query('SELECT * FROM EventDaten', (err, results) => {
     if (err) {

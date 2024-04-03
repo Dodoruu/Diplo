@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const secretKey = 'dein_geheimer_schluessel';
 
+
 function getAllLoans(req, res) {
   db.query('SELECT * FROM LoanDaten', (err, results) => {
     if (err) {
